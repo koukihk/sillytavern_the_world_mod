@@ -36,8 +36,26 @@ const Matrix44 = {
 };
 
 export const SakuraFX = {
-    gl: null, canvas: null, animating: false, animationFrameId: null, sceneStandBy: false, _boundResizeHandler: null,
-    timeInfo: { 'start': 0, 'prev': 0, 'delta': 0, 'elapsed': 0 }, activeParticles: 0,
+    gl: null,
+    canvas: null,
+    animating: false,
+    animationFrameId: null,
+    sceneStandBy: false,
+    _boundResizeHandler: null,
+    timeInfo: { 'start': 0, 'prev': 0, 'delta': 0, 'elapsed': 0 },
+    activeParticles: 0,
+    // New state for density control
+    densityMode: 'dense', // 'dense' or 'sparse'
+    transitionTimeout: null,
+    isTransitioning: false,
+    transitionStartTime: 0,
+    transitionDuration: 4000,
+    initialParticles: 0,
+    initialRenderPasses: 5,
+    targetParticles: 80,
+    targetRenderPasses: 1,
+    renderPasses: 5,
+
     renderSpec: { 'width': 0, 'height': 0, 'aspect': 1, 'array': new Float32Array(3), 'halfWidth': 0, 'halfHeight': 0, 'halfArray': new Float32Array(3), 'pointSize': { 'min': 0, 'max': 0 },
         'setSize': function(w, h) { this.width = w; this.height = h; this.aspect = this.width / this.height; this.array[0] = this.width; this.array[1] = this.height; this.array[2] = this.aspect; this.halfWidth = Math.floor(w / 2); this.halfHeight = Math.floor(h / 2); this.halfArray[0] = this.halfWidth; this.halfArray[1] = this.halfHeight; this.halfArray[2] = this.halfWidth / this.halfHeight; }
     },
@@ -145,10 +163,18 @@ export const SakuraFX = {
             }`,
     },
     
-    init: function(canvas) {
+    init: function(canvas, options = {}) {
         if (!canvas) return;
+        // Reset state for re-initialization
+        if (this.animating) this.stop();
+
+        this.densityMode = options.density || 'dense';
         this.canvas = canvas;
         try {
+            // Clean up any previous GL context to prevent errors on re-init
+            const loseContext = this.gl?.getExtension('WEBGL_lose_context');
+            if (loseContext) loseContext.loseContext();
+
             this.gl = this.canvas.getContext('experimental-webgl');
         } catch (e) {
             // Error logging is handled by the calling module (WeatherSystem)
@@ -167,11 +193,18 @@ export const SakuraFX = {
             this._boundResizeHandler = this.onResize.bind(this);
             window.addEventListener('resize', this._boundResizeHandler);
             this.animate();
+
+            // If starting in dense mode, schedule a transition to sparse
+            if (this.densityMode === 'dense') {
+                this.transitionTimeout = setTimeout(() => this.transitionToSparse(), 8000); // 8 seconds of dense burst
+            }
         }, 50);
     },
 
     stop: function() {
         this.animating = false;
+        clearTimeout(this.transitionTimeout);
+        this.transitionTimeout = null;
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
@@ -195,6 +228,10 @@ export const SakuraFX = {
         if (this.canvas) {
             this.canvas.remove();
         }
+        // Reset internal state
+        this.gl = null;
+        this.canvas = null;
+        this.isTransitioning = false;
     },
 
     animate: function() {
@@ -203,7 +240,24 @@ export const SakuraFX = {
         this.timeInfo.elapsed = (curdate - this.timeInfo.start) / 1000.0;
         this.timeInfo.delta = (curdate - this.timeInfo.prev) / 1000.0;
         this.timeInfo.prev = curdate;
-        if (this.activeParticles < this.pointFlower.numFlowers) {
+
+        // Handle particle activation and transition logic
+        if (this.isTransitioning) {
+            const elapsedTime = performance.now() - this.transitionStartTime;
+            const progress = Math.min(elapsedTime / this.transitionDuration, 1);
+
+            this.renderPasses = Math.round(this.initialRenderPasses - (this.initialRenderPasses - this.targetRenderPasses) * progress);
+            this.activeParticles = Math.floor(this.initialParticles - (this.initialParticles - this.targetParticles) * progress);
+
+            if (progress >= 1) {
+                this.isTransitioning = false;
+                this.densityMode = 'sparse';
+                this.pointFlower.numFlowers = this.targetParticles; // Set the new cap
+                if (this.activeParticles > this.pointFlower.numFlowers) {
+                    this.activeParticles = this.pointFlower.numFlowers;
+                }
+            }
+        } else if (this.activeParticles < this.pointFlower.numFlowers) {
             this.activeParticles += this.pointFlower.activationRate * this.timeInfo.delta;
             if (this.activeParticles > this.pointFlower.numFlowers) {
                 this.activeParticles = this.pointFlower.numFlowers;
@@ -211,6 +265,15 @@ export const SakuraFX = {
         }
         this.renderScene();
         this.animationFrameId = requestAnimationFrame(this.animate.bind(this));
+    },
+
+    transitionToSparse: function() {
+        if (this.isTransitioning || this.densityMode === 'sparse') return;
+        
+        this.isTransitioning = true;
+        this.transitionStartTime = performance.now();
+        this.initialParticles = this.activeParticles;
+        this.initialRenderPasses = this.renderPasses;
     },
 
     onResize: function() {
@@ -285,11 +348,14 @@ export const SakuraFX = {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.pointFlower.buffer); gl.bufferData(gl.ARRAY_BUFFER, this.pointFlower.dataArray, gl.DYNAMIC_DRAW);
         gl.vertexAttribPointer(prog.attributes.aPosition, 3, gl.FLOAT, false, 0, 0); gl.vertexAttribPointer(prog.attributes.aEuler, 3, gl.FLOAT, false, 0, this.pointFlower.numFlowers * 3 * 4); gl.vertexAttribPointer(prog.attributes.aMisc, 2, gl.FLOAT, false, 0, this.pointFlower.numFlowers * 6 * 4);
         const zpos = -2.0;
-        this.pointFlower.offset[0] = this.pointFlower.area.x * -1.0; this.pointFlower.offset[1] = this.pointFlower.area.y * -1.0; this.pointFlower.offset[2] = this.pointFlower.area.z * zpos; gl.uniform3fv(prog.uniforms.uOffset, this.pointFlower.offset); gl.drawArrays(gl.POINT, 0, activeCount);
-        this.pointFlower.offset[0] = this.pointFlower.area.x * -1.0; this.pointFlower.offset[1] = this.pointFlower.area.y * 1.0; this.pointFlower.offset[2] = this.pointFlower.area.z * zpos; gl.uniform3fv(prog.uniforms.uOffset, this.pointFlower.offset); gl.drawArrays(gl.POINT, 0, activeCount);
-        this.pointFlower.offset[0] = this.pointFlower.area.x * 1.0; this.pointFlower.offset[1] = this.pointFlower.area.y * -1.0; this.pointFlower.offset[2] = this.pointFlower.area.z * zpos; gl.uniform3fv(prog.uniforms.uOffset, this.pointFlower.offset); gl.drawArrays(gl.POINT, 0, activeCount);
-        this.pointFlower.offset[0] = this.pointFlower.area.x * 1.0; this.pointFlower.offset[1] = this.pointFlower.area.y * 1.0; this.pointFlower.offset[2] = this.pointFlower.area.z * zpos; gl.uniform3fv(prog.uniforms.uOffset, this.pointFlower.offset); gl.drawArrays(gl.POINT, 0, activeCount);
-        this.pointFlower.offset[0] = 0.0; this.pointFlower.offset[1] = 0.0; this.pointFlower.offset[2] = 0.0; gl.uniform3fv(prog.uniforms.uOffset, this.pointFlower.offset); gl.drawArrays(gl.POINT, 0, activeCount);
+        const offsets = [[0,0,0], [-1,-1,zpos], [-1,1,zpos], [1,-1,zpos], [1,1,zpos]];
+        for (let i = 0; i < this.renderPasses; i++) {
+            this.pointFlower.offset[0] = this.pointFlower.area.x * offsets[i][0];
+            this.pointFlower.offset[1] = this.pointFlower.area.y * offsets[i][1];
+            this.pointFlower.offset[2] = this.pointFlower.area.z * offsets[i][2];
+            gl.uniform3fv(prog.uniforms.uOffset, this.pointFlower.offset);
+            gl.drawArrays(gl.POINT, 0, activeCount);
+        }
         gl.bindBuffer(gl.ARRAY_BUFFER, null); this.unuseShader(prog); gl.disable(gl.BLEND);
     },
     renderPostProcess: function() {
@@ -307,9 +373,19 @@ export const SakuraFX = {
     createPointFlowers: function() {
         this.renderSpec.pointSize = this.gl.getParameter(this.gl.ALIASED_POINT_SIZE_RANGE);
         this.pointFlower.program = this.createShader(this.shaders.sakura_point_vsh, this.shaders.sakura_point_fsh, ['uProjection', 'uModelview', 'uResolution', 'uOffset', 'uDOF', 'uFade'], ['aPosition', 'aEuler', 'aMisc']);
-        this.useShader(this.pointFlower.program);
         this.pointFlower.offset = new Float32Array([0, 0, 0]); this.pointFlower.fader = Vector3.create(0.0, 10.0, 0.0);
-        this.pointFlower.numFlowers = 500; this.pointFlower.activationRate = 30; this.pointFlower.particles = new Array(this.pointFlower.numFlowers);
+
+        if (this.densityMode === 'dense') {
+            this.pointFlower.numFlowers = 500;
+            this.pointFlower.activationRate = 50; // Faster activation for burst
+            this.renderPasses = 5;
+        } else { // sparse
+            this.pointFlower.numFlowers = 80;
+            this.pointFlower.activationRate = 10;
+            this.renderPasses = 1;
+        }
+
+        this.pointFlower.particles = new Array(this.pointFlower.numFlowers);
         this.pointFlower.dataArray = new Float32Array(this.pointFlower.numFlowers * (3 + 3 + 2)); this.pointFlower.buffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.pointFlower.buffer); this.gl.bufferData(this.gl.ARRAY_BUFFER, this.pointFlower.dataArray, this.gl.DYNAMIC_DRAW); this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null); this.unuseShader(this.pointFlower.program);
         const BlossomParticle = function(){ this.velocity=[0,0,0]; this.rotation=[0,0,0]; this.position=[0,0,0]; this.euler=[0,0,0]; this.size=1.0; };

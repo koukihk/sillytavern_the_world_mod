@@ -9,6 +9,7 @@ import { UIEventManager } from './UIEventManager.js';
 import { TimeAnimator } from './TimeAnimator.js';
 import { MapViewportManager } from './MapViewportManager.js';
 import { MapEditorManager } from './MapEditorManager.js';
+import { Icons, getIcon } from '../utils/icons.js';
 
 export class UIController {
     constructor(dependencies) {
@@ -48,9 +49,20 @@ export class UIController {
         this.eventManager = eventManager;
         this.panelThemeManager = dependencies.panelThemeManager;
     }
-    
+
     async init() {
         this.logger.log('UIController 初始化开始...');
+
+        // Inject Google Fonts (Outfit)
+        if (this.$('head').find('link[href*="Outfit"]').length === 0) {
+            this.$('head').append('<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">');
+        }
+
+        // Inject Noto Serif SC (for Scene text)
+        if (this.$('head').find('link[href*="Noto+Serif+SC"]').length === 0) {
+            this.$('head').append('<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">');
+        }
+
         await this.loadPanelHtml();
         this.createToggleButton();
         this.panelManager.applyInitialPanelState();
@@ -90,11 +102,47 @@ export class UIController {
                 const $fxLayer = this.$('<div>').attr('id', this.config.FX_LAYER_ID);
                 body.append($fxLayer);
             }
+
+            // 注入 Lucide 图标到标签导航
+            this._injectTabIcons();
+            // 更新音频按钮状态
+            this.updateAudioToggleIcon();
+
             this.logger.success('面板 HTML 加载并注入成功。');
             this.applyFontSize();
         } catch (error) {
             this.logger.error('严重: 面板 HTML 加载失败:', error);
         }
+    }
+
+    /**
+     * 注入 Lucide 图标到标签导航
+     */
+    _injectTabIcons() {
+        const tabIcons = {
+            'world-state': Icons.compass,
+            'map-nav': Icons.map,
+            'settings': Icons.settings
+        };
+        this.$('.tw-tab-link').each((_, el) => {
+            const $tab = this.$(el);
+            const tabId = $tab.data('tab');
+            const iconSvg = tabIcons[tabId];
+            if (iconSvg) {
+                $tab.find('.tw-tab-icon').html(`<span class="tw-icon">${iconSvg}</span>`);
+            }
+        });
+    }
+
+    /**
+     * 更新音频按钮图标状态
+     */
+    updateAudioToggleIcon() {
+        const $toggle = this.$('#tw-audio-toggle');
+        const isEnabled = this.state.isAudioEnabled;
+        const iconSvg = isEnabled ? Icons.volume2 : Icons.volumeX;
+        $toggle.html(`<span class="tw-icon">${iconSvg}</span>`);
+        $toggle.toggleClass('muted', !isEnabled);
     }
 
     createToggleButton() {
@@ -134,14 +182,14 @@ export class UIController {
             $wsPane.html('<p class="tw-notice">等待世界状态数据...</p>');
         }
 
-        // Render the new map pane
+        // Render map and settings panes regardless of world state
         await this.renderer.renderMapPane($mapPane);
+        this.renderer.renderSettingsPane($settingsPane);
+
         if (this.state.mapMode === 'advanced') {
             this.eventManager.mapViewportManager.updateMapOverlays();
         }
 
-
-        this.renderer.renderSettingsPane($settingsPane);
         this.logger.log('所有面板内容更新完成。');
     }
 }

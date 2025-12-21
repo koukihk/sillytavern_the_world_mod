@@ -37,4 +37,15 @@ export class MapSystem {
         }
         this.logger.success('[MapSystem] Data initialization complete.');
     }
+
+    async resetMapData() {
+        if (!this.mapDataManager.isInitialized() || !this.mapDataManager.bookName) {
+            this.logger.warn('[MapSystem] Cannot reset map data, no map book is bound.');
+            return;
+        }
+        this.logger.log(`[MapSystem] Resetting map data for book: ${this.mapDataManager.bookName}`);
+        await this.dependencies.helper.replaceWorldbook(this.mapDataManager.bookName, []);
+        // Re-initialize to clear in-memory data and reflect the empty state
+        await this.initializeData(this.mapDataManager.bookName);
+    }
 }

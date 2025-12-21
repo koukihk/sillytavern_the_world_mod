@@ -5,7 +5,15 @@
 export const TheWorldState = {
     // --- Data from AI ---
     latestMapData: null,
-    latestWorldStateData: null,
+    latestWorldStateData: {
+        "时间": "00:00",
+        "天气": "晴",
+        "地点": "未知",
+        "季节": "春",
+        "人物": [],
+        "氛围": "平静",
+        "光照": "正常"
+    },
     
     // --- UI State ---
     isPanelVisible: false,
@@ -20,6 +28,7 @@ export const TheWorldState = {
     liteMapPathStack: [], // For lite map navigation state
     advancedMapPathStack: [], // For advanced map navigation state
     currentPlayerLocationId: null, // NEW: For Macro API
+    lorebookTransactionHistory: {}, // Tracks lorebook changes by message_id for rollback
 
     // --- Settings State ---
     activeSkyThemeId: 'default', // NEW: To store the selected sky theme
@@ -28,7 +37,7 @@ export const TheWorldState = {
     isImmersiveModeEnabled: false, // New toggle for the "glass" effect
     isRaindropFxOn: false,
     weatherFxEnabled: true,
-    isCloudFxEnabled: true,
+    isHighPerformanceFxEnabled: true,
     locationFxEnabled: true,
     celestialFxEnabled: true,
     isSkygazingModeActive: false,

@@ -22,6 +22,7 @@ export class AudioManager {
         this.sfxGain = null;
         this.currentAmbientSound = null;
         this.isAudioUnlocked = false;
+        this.activeSfxSources = []; // 跟踪正在播放的 SFX 音源
     }
 
     unlockAudio() {
@@ -65,17 +66,17 @@ export class AudioManager {
         }
 
         if (this.audioCache[finalPath]) return this.audioCache[finalPath];
-        
+
         const audioCtx = this._getAudioContext();
         if (!audioCtx) {
             this.logger.error(`Cannot load audio, AudioContext not available.`);
             return null;
         }
-        
+
         const scriptUrl = new URL(import.meta.url);
         const basePath = scriptUrl.pathname.substring(0, scriptUrl.pathname.lastIndexOf('/modules'));
         const fullUrl = `${this.win.location.origin}${basePath}/${finalPath}`;
-        
+
         try {
             const response = await fetch(fullUrl);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -91,12 +92,64 @@ export class AudioManager {
 
     processMessage(messageText) {
         if (!messageText || !this.isAudioUnlocked) return;
+
+        // 淡出所有正在播放的 SFX（无论新消息是否包含音效命令）
+        if (this.activeSfxSources.length > 0) {
+            this.logger.log('New message received, fading out previous SFX sounds.');
+            this.fadeOutAllSfx({ fade_duration: 0.5 });
+        }
+
+        // 处理环境音
         if (!messageText.includes('[FX.PlayAmbient')) {
             if (this.currentAmbientSound) {
                 this.logger.log('New message lacks PlayAmbient command, stopping current ambient sound.');
                 this.stopAmbient({});
             }
         }
+    }
+
+    /**
+     * 淡出并停止所有正在播放的 SFX 音效
+     * @param {Object} options - 配置选项
+     * @param {number} options.fade_duration - 淡出持续时间（秒），默认 0.5
+     */
+    fadeOutAllSfx({ fade_duration = 0.5 } = {}) {
+        const audioCtx = this._getAudioContext();
+        if (!audioCtx || this.activeSfxSources.length === 0) return;
+
+        const now = audioCtx.currentTime;
+        const stopTime = now + fade_duration;
+
+        // 复制数组，因为我们会在回调中修改它
+        const sourcesToStop = [...this.activeSfxSources];
+        this.activeSfxSources = []; // 立即清空，防止重复处理
+
+        sourcesToStop.forEach(sfxItem => {
+            if (sfxItem.isStopping) return; // 已经在停止中
+            sfxItem.isStopping = true;
+
+            try {
+                // 取消已计划的音量变化，然后线性淡出到 0
+                sfxItem.gainNode.gain.cancelScheduledValues(now);
+                sfxItem.gainNode.gain.setValueAtTime(sfxItem.gainNode.gain.value, now);
+                sfxItem.gainNode.gain.linearRampToValueAtTime(0, stopTime);
+
+                // 在淡出完成后停止音源
+                sfxItem.source.stop(stopTime);
+            } catch (e) {
+                // 音源可能已经停止，忽略错误
+            }
+
+            // 延迟断开连接以确保淡出完成
+            setTimeout(() => {
+                try {
+                    sfxItem.gainNode.disconnect();
+                    if (sfxItem.panner) sfxItem.panner.disconnect();
+                } catch (e) { }
+            }, fade_duration * 1000 + 100);
+        });
+
+        this.logger.log(`[Audio] Fading out ${sourcesToStop.length} SFX sounds.`);
     }
 
     _ambientLoopScheduler() {
@@ -112,7 +165,7 @@ export class AudioManager {
             source.buffer = sound.buffer;
             source.connect(sound.gainNode);
             source.start(sound.nextSourceStartTime);
-            
+
             sound.sources.push(source);
             sound.nextSourceStartTime += sound.buffer.duration;
         }
@@ -140,7 +193,7 @@ export class AudioManager {
         gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
         gainNode.connect(this.ambientGain);
         gainNode.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + fade_duration);
-        
+
         this.currentAmbientSound = {
             path,
             buffer,
@@ -161,40 +214,44 @@ export class AudioManager {
 
         const ambientToStop = this.currentAmbientSound;
         this.currentAmbientSound = null;
-        
+
         this.logger.log(`[Audio] Stopping ambient: ${ambientToStop.path}`);
         ambientToStop.isStopping = true;
         clearTimeout(ambientToStop.loopTimeoutId);
-        
+
         const stopTime = audioCtx.currentTime + fade_duration;
         ambientToStop.gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
         ambientToStop.gainNode.gain.setValueAtTime(ambientToStop.gainNode.gain.value, audioCtx.currentTime);
         ambientToStop.gainNode.gain.linearRampToValueAtTime(0, stopTime);
-        
+
         ambientToStop.sources.forEach(source => {
-            try { source.stop(stopTime); } catch(e) {}
+            try { source.stop(stopTime); } catch (e) { }
         });
-        
+
         setTimeout(() => {
             ambientToStop.gainNode.disconnect();
         }, fade_duration * 1000 + 200);
     }
-    
+
     async playSoundQueue(queue) {
         const audioCtx = this._getAudioContext();
         if (!audioCtx || !Array.isArray(queue) || queue.length === 0) return;
 
+        // 用于跟踪当前队列是否被取消
+        let isCancelled = false;
+        const queueId = Date.now();
+
         const playNextSound = async (index) => {
-            if (index >= queue.length) return;
+            if (isCancelled || index >= queue.length) return;
 
             const sound = queue[index];
             if (!sound.path) {
                 playNextSound(index + 1);
                 return;
             }
-            
+
             const buffer = await this._loadAudio(sound.path);
-            if (!buffer) {
+            if (!buffer || isCancelled) {
                 playNextSound(index + 1);
                 return;
             }
@@ -214,7 +271,7 @@ export class AudioManager {
 
             gainNode.gain.setValueAtTime(0, now);
             gainNode.gain.linearRampToValueAtTime(targetVolume, now + fadeInDuration);
-            
+
             if (soundDuration > fadeInDuration + fadeOutDuration) {
                 gainNode.gain.setValueAtTime(targetVolume, now + soundDuration - fadeOutDuration);
             }
@@ -223,19 +280,42 @@ export class AudioManager {
             source.connect(panner).connect(gainNode).connect(this.sfxGain);
             source.start(now);
             this.logger.log(`[Audio] Playing SFX: "${sound.path}" with automatic fades.`);
-            
+
+            // 创建 SFX 跟踪对象
+            const sfxItem = {
+                source,
+                gainNode,
+                panner,
+                queueId,
+                isStopping: false
+            };
+
+            // 添加到活跃音源列表
+            this.activeSfxSources.push(sfxItem);
+
             source.onended = () => {
-                 gainNode.disconnect();
-                 panner.disconnect();
+                // 从活跃列表中移除
+                const idx = this.activeSfxSources.indexOf(sfxItem);
+                if (idx !== -1) {
+                    this.activeSfxSources.splice(idx, 1);
+                }
+                try {
+                    gainNode.disconnect();
+                    panner.disconnect();
+                } catch (e) { }
             };
 
             const durationMs = buffer.duration * 1000;
             const nextDelayMs = (sound.delay || 0) * 1000;
             const totalWait = durationMs + nextDelayMs;
 
-            setTimeout(() => playNextSound(index + 1), totalWait);
+            setTimeout(() => {
+                if (!isCancelled) {
+                    playNextSound(index + 1);
+                }
+            }, totalWait);
         };
-        
+
         playNextSound(0);
     }
 

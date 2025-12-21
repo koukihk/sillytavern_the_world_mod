@@ -83,7 +83,7 @@ export class MapDataManager {
         return [...new Set(keywords.filter(Boolean))];
     }
 
-    async processMapUpdate(updateData) {
+    async processMapUpdate(updateData, messageId) {
         if (!Array.isArray(updateData)) {
             this.logger.warn('[MapDataManager] Invalid <MapUpdate> format received. Expected an array of nodes.', updateData);
             return;
@@ -94,34 +94,54 @@ export class MapDataManager {
             return;
         }
 
+        const createdNodeUids = [];
+
         for (const node of updateData) {
             if (!node.id) continue;
 
             if (node.op === 'add_or_update') {
+                const isNewNode = !this.nodes.has(node.id);
                 const { op, ...nodeDetails } = node;
 
-                // Update in-memory data first to ensure parent data is available for keyword generation
                 const nodeInMemory = this.nodes.get(node.id) || { id: node.id };
                 Object.assign(nodeInMemory, nodeDetails);
                 this.nodes.set(node.id, nodeInMemory);
                 
-                // Build keywords using the most up-to-date in-memory data
                 const keywords = this._buildKeywordsForNode(nodeInMemory);
                 const { id, ...nodeDataForFile } = nodeInMemory;
 
-                await this.lorebookManager.createOrUpdateNodeEntry(
+                const createdEntry = await this.lorebookManager.createOrUpdateNodeEntry(
                     this.bookName,
                     node.id,
                     nodeInMemory.name,
                     nodeDataForFile,
-                    keywords // Pass the generated keywords
+                    keywords
                 );
+
+                if (isNewNode && createdEntry) {
+                    createdNodeUids.push(createdEntry.uid);
+                }
 
             } else if (node.op === 'remove') {
                 await this.lorebookManager.deleteNodeEntry(this.bookName, node.id);
                 this.nodes.delete(node.id);
             }
         }
+
+        if (messageId && createdNodeUids.length > 0) {
+            if (!this.dependencies.state.lorebookTransactionHistory[messageId]) {
+                this.dependencies.state.lorebookTransactionHistory[messageId] = [];
+            }
+            createdNodeUids.forEach(uid => {
+                this.dependencies.state.lorebookTransactionHistory[messageId].push({
+                    type: 'add_entry',
+                    bookName: this.bookName,
+                    entryUid: uid,
+                });
+            });
+            this.logger.log(`[MapDataManager] Logged ${createdNodeUids.length} new entries for message ${messageId}.`);
+        }
+
         this.logger.success(`[MapDataManager] Processed an update with ${updateData.length} nodes.`);
     }
 

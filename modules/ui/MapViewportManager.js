@@ -154,8 +154,12 @@ export class MapViewportManager {
         const canvasX = (x / logicalMax) * $canvas.width();
         const canvasY = (y / logicalMax) * $canvas.height();
 
-        const targetPanX = ($viewport.width() / 2) - (canvasX * targetZoom);
-        const targetPanY = ($viewport.height() / 2) - (canvasY * targetZoom);
+        // Correctly account for the canvas's own offset within the viewport
+        const canvasOffsetLeft = parseFloat($canvas.css('left')) || 0;
+        const canvasOffsetTop = parseFloat($canvas.css('top')) || 0;
+
+        const targetPanX = ($viewport.width() / 2) - (canvasX * targetZoom) - canvasOffsetLeft;
+        const targetPanY = ($viewport.height() / 2) - (canvasY * targetZoom) - canvasOffsetTop;
 
         const startPan = { ...this.mapState.pan };
         const startZoom = this.mapState.zoom;
@@ -252,8 +256,13 @@ export class MapViewportManager {
 
         const boundsCenterX = minX + boundsWidth / 2;
         const boundsCenterY = minY + boundsHeight / 2;
-        const targetPanX = (viewportWidth / 2) - (boundsCenterX * targetZoom);
-        const targetPanY = (viewportHeight / 2) - (boundsCenterY * targetZoom);
+
+        // Correctly account for the canvas's own offset within the viewport
+        const canvasOffsetLeft = parseFloat($canvas.css('left')) || 0;
+        const canvasOffsetTop = parseFloat($canvas.css('top')) || 0;
+
+        const targetPanX = (viewportWidth / 2) - (boundsCenterX * targetZoom) - canvasOffsetLeft;
+        const targetPanY = (viewportHeight / 2) - (boundsCenterY * targetZoom) - canvasOffsetTop;
 
         // Animate to the new view
         const startPan = { ...this.mapState.pan };
@@ -307,10 +316,13 @@ export class MapViewportManager {
         
         const canvasSize = $canvas.width(); // Use actual canvas size for calculations
 
-        const worldLeft = -pan.x / zoom;
-        const worldRight = (vw - pan.x) / zoom;
-        const worldTop = -pan.y / zoom;
-        const worldBottom = (vh - pan.y) / zoom;
+        const canvasOffsetLeft = parseFloat($canvas.css('left')) || 0;
+        const canvasOffsetTop = parseFloat($canvas.css('top')) || 0;
+
+        const worldLeft = (-pan.x - canvasOffsetLeft) / zoom;
+        const worldRight = (vw - pan.x - canvasOffsetLeft) / zoom;
+        const worldTop = (-pan.y - canvasOffsetTop) / zoom;
+        const worldBottom = (vh - pan.y - canvasOffsetTop) / zoom;
         
         const getNiceInterval = (span, logicalSpan) => {
             const minTicks = 5;
@@ -329,7 +341,7 @@ export class MapViewportManager {
         const firstTickX = Math.ceil(worldLeft / (canvasSize / logicalMax) / intervalX) * intervalX;
 
         for (let x = firstTickX; x <= (worldRight / (canvasSize / logicalMax)); x += intervalX) {
-            const screenX = x * (canvasSize / logicalMax) * zoom + pan.x;
+            const screenX = x * (canvasSize / logicalMax) * zoom + pan.x + canvasOffsetLeft;
             if (screenX >= 0 && screenX <= vw) {
                 const height = x % (intervalX * 2) === 0 ? '50%' : '25%';
                 $rulerX.append(`<div class="tw-ruler-tick" style="left:${screenX}px; height:${height};"></div>`);
@@ -343,7 +355,7 @@ export class MapViewportManager {
         const firstTickY = Math.ceil(worldTop / (canvasSize / logicalMax) / intervalY) * intervalY;
         
         for (let y = firstTickY; y <= (worldBottom / (canvasSize / logicalMax)); y += intervalY) {
-            const screenY = y * (canvasSize / logicalMax) * zoom + pan.y;
+            const screenY = y * (canvasSize / logicalMax) * zoom + pan.y + canvasOffsetTop;
             if (screenY >= 0 && screenY <= vh) {
                 const width = y % (intervalY * 2) === 0 ? '50%' : '25%';
                  $rulerY.append(`<div class="tw-ruler-tick" style="top:${screenY}px; width:${width};"></div>`);

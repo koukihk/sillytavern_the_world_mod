@@ -2,6 +2,8 @@
  * The World - UI Dialogs
  * @description Manages all popup dialogs.
  */
+import { getIcon } from '../utils/icons.js';
+
 export class UIDialogs {
     constructor({ $, state, win, logger, config, triggerSlash, timeGradient, mapSystem, renderer }) {
         this.$ = $;
@@ -33,11 +35,21 @@ export class UIDialogs {
 
         const weatherData = {
             '晴天': { variants: { '放晴': {}, '流星': {}, '萤火虫': {} } },
-            '云':   { variants: { '少云': {}, '多云': {}, '阴天': {} } },
-            '风':   { variants: { '微风': {}, '大风': {}, '狂风': {} } },
-            '雨':   { variants: { '小雨': {}, '中雨': {}, '大雨': {}, '暴雨': { addons: { '雷电': {} } } } },
-            '雪':   { variants: { '小雪': {}, '中雪': {}, '大雪': {}, '暴雨': {} } },
+            '云': { variants: { '少云': {}, '多云': {}, '阴天': {} } },
+            '风': { variants: { '微风': {}, '大风': {}, '狂风': {} } },
+            '雨': { variants: { '小雨': {}, '中雨': {}, '大雨': {}, '暴雨': { addons: { '雷电': {} } } } },
+            '雪': { variants: { '小雪': {}, '中雪': {}, '大雪': {}, '暴雨': {} } },
             '特殊': { variants: { '樱花雨': {}, '起雾': {}, '烟花': {} } }
+        };
+
+        const iconMap = {
+            '晴天': 'sun', '放晴': 'sun', '流星': 'sparkles', '萤火虫': 'sparkles',
+            '云': 'cloud', '少云': 'cloud', '多云': 'cloud', '阴天': 'cloud',
+            '风': 'wind', '微风': 'wind', '大风': 'wind', '狂风': 'wind',
+            '雨': 'cloudRain', '小雨': 'cloudRain', '中雨': 'cloudRain', '大雨': 'cloudRain', '暴雨': 'cloudLightning',
+            '雪': 'cloudSnow', '小雪': 'cloudSnow', '中雪': 'cloudSnow', '大雪': 'cloudSnow',
+            '特殊': 'sparkles', '樱花雨': 'sparkles', '起雾': 'cloud', '烟花': 'sparkles',
+            '雷电': 'zap'
         };
 
         const content = this.$(`
@@ -48,7 +60,7 @@ export class UIDialogs {
                 <div class="tw-weather-scroller-highlight"></div>
             </div>
         `);
-        
+
         const buttons = this.$('<div class="ws-dialog-buttons"><button class="dialog_cancel has-ripple">关闭</button><button class="dialog_confirm has-ripple">确认</button></div>');
         const dialog = this.createDialog('改变天气', content, buttons);
 
@@ -57,7 +69,7 @@ export class UIDialogs {
             variant: dialog.find('#tw-weather-variant'),
             addon: dialog.find('#tw-weather-addon')
         };
-        
+
         let selections = { type: null, variant: null, addon: null };
 
         const populateColumn = (colName, items) => {
@@ -71,12 +83,14 @@ export class UIDialogs {
             const $list = this.$('<ul class="tw-weather-scroller-list">');
             $list.css('padding-top', '50px'); // Padding for centering first item
             items.forEach(item => {
-                $list.append(`<li class="tw-weather-scroller-item" data-value="${item}">${item}</li>`);
+                const iconName = iconMap[item];
+                const iconHtml = iconName ? getIcon(iconName, 'tw-weather-icon') : '';
+                $list.append(`<li class="tw-weather-scroller-item" data-value="${item}">${iconHtml} ${item}</li>`);
             });
             $list.append('<li class="tw-weather-scroller-item" style="height: 50px;"></li>'); // Padding for centering last item
             $col.append($list);
         };
-        
+
         const setupScroller = ($col) => {
             const $list = $col.find('.tw-weather-scroller-list');
             if (!$list.length) return;
@@ -88,8 +102,9 @@ export class UIDialogs {
             const snap = () => {
                 const currentTop = parseInt($list.css('transform').split(',')[5] || 0, 10) || 0;
                 let selectedIndex = Math.round(-currentTop / itemHeight);
-                const itemCount = $list.children().length - 2; // -2 for top padding and bottom dummy li
-                selectedIndex = Math.max(0, Math.min(selectedIndex, itemCount - 1)); // Corrected boundary
+                // 使用 data-value 属性精确统计实际可选项目数（排除底部 padding dummy）
+                const itemCount = $list.children('[data-value]').length;
+                selectedIndex = Math.max(0, Math.min(selectedIndex, itemCount - 1));
 
                 $list.css('transform', `translateY(${-selectedIndex * itemHeight}px)`);
                 $list.children('.selected').removeClass('selected');
@@ -104,7 +119,7 @@ export class UIDialogs {
                     updateDependentColumns(colName);
                 }
             };
-            
+
             const getCoords = e => e.type.startsWith('touch') ? e.originalEvent.touches[0] || e.originalEvent.changedTouches[0] : e;
 
             const onDragStart = (e) => {
@@ -125,9 +140,10 @@ export class UIDialogs {
                 e.preventDefault();
                 const moveCoords = getCoords(e);
                 const deltaY = moveCoords.pageY - startY;
-                
-                const itemCount = $list.children().length - 2;
-                const minTop = -(itemCount - 1) * itemHeight; // Corrected boundary
+
+                // 使用 data-value 属性精确统计实际可选项目数
+                const itemCount = $list.children('[data-value]').length;
+                const minTop = -(itemCount - 1) * itemHeight; // 允许滑到最后一个实际项目
                 const maxTop = 0; // First item
                 const newTop = Math.max(minTop, Math.min(maxTop, startTop + deltaY));
 
@@ -163,7 +179,7 @@ export class UIDialogs {
             populateColumn('addon', addonItems);
             selections.addon = addonItems.length > 0 ? addonItems[0] : null;
             setupScroller(columns.addon);
-             if(addonItems.length > 0) {
+            if (addonItems.length > 0) {
                 columns.addon.find('.tw-weather-scroller-list').css('transform', 'translateY(0px)').children().eq(0).addClass('selected');
             }
         };
@@ -174,7 +190,7 @@ export class UIDialogs {
         selections.type = typeKeys[0];
         updateDependentColumns('type');
         Object.values(columns).forEach(setupScroller);
-        
+
         setTimeout(() => {
             columns.type.find('.tw-weather-scroller-list').children().eq(0).addClass('selected');
             columns.variant.find('.tw-weather-scroller-list').children().eq(0).addClass('selected');
@@ -183,24 +199,24 @@ export class UIDialogs {
         dialog.find('.dialog_confirm').on('click', () => {
             let finalText = '';
             if (selections.type === '晴天') {
-                 switch(selections.variant) {
+                switch (selections.variant) {
                     case '放晴': finalText = '天空放晴，乌云散去，阳光洒了下来。'; break;
                     case '流星': finalText = '夜空中划过数道流星。'; break;
                     case '萤火虫': finalText = '几只萤火虫在黑暗中飞舞。'; break;
-                 }
+                }
             } else if (selections.type === '特殊') {
-                 switch(selections.variant) {
+                switch (selections.variant) {
                     case '樱花雨': finalText = '风中带来了樱花瓣，下起了樱花雨。'; break;
                     case '起雾': finalText = '四周开始起雾了。'; break;
                     case '烟花': finalText = '夜空中绽放出绚烂的烟花。'; break;
-                 }
+                }
             } else {
                 finalText = `天空${selections.variant}了。`;
                 if (selections.addon) {
                     finalText = `天空${selections.variant}，并伴有${selections.addon}。`;
                 }
             }
-            
+
             this.triggerSlash(`/send <${finalText}> | /trigger`);
             this.removeDialog();
         });
@@ -216,10 +232,10 @@ export class UIDialogs {
             const match = this.state.latestWorldStateData['时间'].match(/(\d{4})[年-]?.*?(\d{1,2})[月-]?(\d{1,2})[日-]?.*?(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
             if (match) {
                 [, year, month, day, hour, minute, second] = match.map(Number);
-                month -= 1; 
+                month -= 1;
             }
         }
-        
+
         const currentDate = new Date(year || now.getFullYear(), month || now.getMonth(), day || now.getDate());
         currentDate.setHours(hour || now.getHours());
         currentDate.setMinutes(minute || now.getMinutes());
@@ -265,10 +281,10 @@ export class UIDialogs {
                 </div>
             </div>
         `);
-        
+
         const buttons = this.$('<div class="ws-dialog-buttons"><button class="dialog_cancel has-ripple">关闭</button><button class="dialog_confirm has-ripple">确认</button></div>');
         const dialog = this.createDialog('设定时间', content, buttons);
-        
+
         const calendarBody = dialog.find('#tw-calendar-body');
         const hourHand = dialog.find('#tw-hour-hand');
         const minuteHand = dialog.find('#tw-minute-hand');
@@ -284,7 +300,7 @@ export class UIDialogs {
             const month = state.displayDate.getMonth();
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-            
+
             let date = 1;
             for (let i = 0; i < 6; i++) {
                 const row = this.$('<tr>');
@@ -315,7 +331,7 @@ export class UIDialogs {
             hourHand.css('transform', `translateX(-50%) rotate(${hourDeg}deg)`);
             minuteHand.css('transform', `translateX(-50%) rotate(${minuteDeg}deg)`);
             if (secondHand) {
-                 secondHand.css('transform', `translateX(-50%) rotate(${secondDeg}deg)`);
+                secondHand.css('transform', `translateX(-50%) rotate(${secondDeg}deg)`);
             }
         };
 
@@ -323,7 +339,7 @@ export class UIDialogs {
             hourInput.val(String(h).padStart(2, '0'));
             minuteInput.val(String(m).padStart(2, '0'));
         };
-        
+
         const updateAll = () => {
             const h = state.selectedDate.getHours();
             const m = state.selectedDate.getMinutes();
@@ -334,9 +350,9 @@ export class UIDialogs {
             updateClock(h, m, s);
             updateInputs(h, m);
         };
-        
+
         updateAll();
-        
+
         this.$(this.win.document).on('tw-time-tick.twDialog', (e, time) => {
             state.selectedDate.setHours(time.hours, time.minutes, time.seconds);
             updateClock(time.hours, time.minutes, time.seconds);
@@ -364,12 +380,12 @@ export class UIDialogs {
             const rect = clock[0].getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
-            
+
             const moveHandler = (moveEvent) => {
                 const clientX = moveEvent.clientX || moveEvent.touches[0].clientX;
                 const clientY = moveEvent.clientY || moveEvent.touches[0].clientY;
                 const angle = Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI) + 90;
-                
+
                 if (hand === 'hour') {
                     let h = Math.round((angle < 0 ? angle + 360 : angle) / 30);
                     if (h === 0) h = 12;
@@ -447,7 +463,7 @@ export class UIDialogs {
             this.toastr.info(`正在尝试移动到: ${node.name}`);
             this.removeDialog();
         });
-        
+
         $content.append($buttonGo);
 
         const $overlay = this.$('<div class="ws-dialog-overlay tw-context-menu-overlay"></div>');
@@ -456,7 +472,7 @@ export class UIDialogs {
         $menu.append(`<h4>${node.name}</h4>`);
         $menu.append($content);
 
-        const menuWidth = 150; 
+        const menuWidth = 150;
         const menuHeight = 100;
         let top = event.clientY;
         let left = event.clientX;
@@ -490,7 +506,7 @@ export class UIDialogs {
             const themeData = await response.json();
 
             const $previewContainer = this.$('<div class="theme-preview-container"></div>');
-            
+
             const gradients = themeData.gradients.filter(g => g.hour < 24);
 
             gradients.forEach(gradient => {
@@ -525,7 +541,7 @@ export class UIDialogs {
         const dialogClass = options.isMap ? 'tw-advanced-map-modal' : 'ws-dialog';
 
         const dialog = this.$(`<div class="ws-dialog-overlay ${themeClass}"><div class="${dialogClass}"><h3>${title}</h3><div class="dialog-content"></div><div class="dialog-buttons-wrapper"></div></div></div>`);
-        
+
         dialog.find(`.${dialogClass}`).css('background', theme.background);
 
         dialog.find(".dialog-content").append(content);
@@ -554,7 +570,7 @@ export class UIDialogs {
     }
 
     showMapEditorToolbox($container) {
-        this.hideMapEditorToolbox(); 
+        this.hideMapEditorToolbox();
 
         const $toolbox = this.$(`
             <div class="tw-map-editor-toolbox">
@@ -632,7 +648,7 @@ export class UIDialogs {
     hideMapEditorToolbox() {
         this.$('.tw-map-editor-toolbox').remove();
     }
-    
+
     _renderAndAttachNodeTree($treeContainer) {
         $treeContainer.empty();
         const { nodes } = this.mapSystem.mapDataManager;
@@ -665,7 +681,7 @@ export class UIDialogs {
     populateToolboxEditor(nodeId) {
         const $editor = this.$('.tw-map-node-editor');
         if (!$editor.length) return;
-        
+
         const node = this.mapSystem.mapDataManager.nodes.get(nodeId);
         if (!node) {
             $editor.addClass('hidden');

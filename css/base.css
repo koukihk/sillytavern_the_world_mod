@@ -16,25 +16,30 @@
     position: fixed;
     top: 10px;
     right: 10px;
-    width: 50px; /* Adjusted for new icon size */
-    height: 50px; /* Adjusted for new icon size */
+    width: 50px;
+    /* Adjusted for new icon size */
+    height: 50px;
+    /* Adjusted for new icon size */
     background-color: rgba(30, 35, 45, .85);
     color: #fff;
-    border-radius: 25%; /* Changed from 50% to look like an app icon */
+    border-radius: 25%;
+    /* Changed from 50% to look like an app icon */
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: move;
-    z-index: 9998;
+    z-index: 43;
     border: 1px solid #4a5568;
     -webkit-user-select: none;
     user-select: none;
     transition: transform .3s ease-in-out, box-shadow .3s ease-in-out;
     overflow: hidden;
 }
+
 #the_world-toggle-btn:hover {
     transform: scale(1.1)
 }
+
 #the_world-toggle-btn .tw-bg-layer-1,
 #the_world-toggle-btn .tw-bg-layer-2 {
     position: absolute;
@@ -47,6 +52,7 @@
     background-size: cover;
     background-position: center;
 }
+
 #the_world-toggle-btn .long-press-indicator {
     position: absolute;
     bottom: 0;
@@ -60,6 +66,7 @@
     pointer-events: none;
     border-radius: inherit;
 }
+
 #the_world-toggle-btn.long-press-active .long-press-indicator {
     transform: scaleY(1);
 }
@@ -74,6 +81,7 @@
     z-index: 10000;
     overflow: hidden;
 }
+
 #the_world-fx-layer-bg {
     position: fixed;
     top: 0;
@@ -86,25 +94,31 @@
 }
 
 .tw-panel {
-    font-family: sans-serif;
+    font-family: 'Outfit', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
     font-size: var(--tw-font-size, 14px);
     position: fixed;
     top: 60px;
     width: 450px;
-    max-width: 50vw;
-    height: 60vh;
-    min-width: 280px;
-    min-height: 200px;
+    height: 700px;
+    background: rgba(30, 30, 35, 0.5);
+    /* Translucent dark background */
+    backdrop-filter: blur(12px) saturate(180%);
+    /* Frosted glass effect */
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    /* Subtle border */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    /* Soft shadow */
     border-radius: 12px;
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
-    z-index: 9999;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 5px 25px rgba(0, 0, 0, .5);
-    transition: all .3s ease-in-out;
-    background: rgba(0, 0, 0, .15);
+    z-index: 44;
+    color: var(--text-main);
+    transition: width 0.3s, height 0.3s, opacity 0.2s, transform 0.2s;
+    overflow: hidden;
+    /* Ensure rounded corners clip content */
 }
+
 .tw-panel.panel-blur-on .tw-theme-layers {
     filter: blur(var(--rain-blur));
 }
@@ -126,12 +140,14 @@
     position: relative;
     flex-shrink: 0;
 }
+
 .tw-header-controls {
     display: flex;
     gap: 10px;
     position: relative;
     z-index: 10;
 }
+
 .tw-minimize,
 .tw-close {
     font-size: 20px;
@@ -142,41 +158,294 @@
     border-radius: 4px;
     transition: all .2s cubic-bezier(0.42, 0, 0.58, 1);
 }
+
 .tw-close:hover {
     background: rgba(0, 0, 0, 0.2);
     transform: scale(1.2) rotate(90deg);
 }
+
 .tw-minimize:hover {
     background: rgba(0, 0, 0, 0.2);
     transform: scale(1.2);
 }
 
+/* === 一体化导航栏 === */
 .tw-tabs {
     display: flex;
-    background-color: rgba(0, 0, 0, .1);
-    padding: 5px;
-    gap: 5px;
-    z-index: 1;
+    background: transparent;
+    padding: 0 15px;
+    gap: 15px;
+    z-index: 10;
     position: relative;
     flex-shrink: 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
+
 .tw-tab-link {
-    flex-grow: 1;
+    flex: 1;
+    /* 均分空间 */
     text-align: center;
-    padding: 8px;
-    border-radius: 6px;
+    padding: 10px 5px;
     cursor: pointer;
-    font-weight: 700;
-    font-size: 14px;
+    font-weight: 500;
+    font-size: 15px;
     color: var(--text-secondary);
-    transition: all .2s ease-in-out
+    transition: all .3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: relative;
+    opacity: 0.7;
+    white-space: nowrap;
+    /* 防止文字换行 */
 }
+
 .tw-tab-link:hover {
-    background-color: rgba(255, 255, 255, .1)
+    color: var(--text-main);
+    opacity: 1;
+    background: transparent;
 }
+
 .tw-tab-link.active {
-    background-color: var(--header-bg);
-    color: var(--text-main)
+    background: transparent;
+    color: var(--text-main);
+    opacity: 1;
+    font-weight: 600;
+}
+
+.tw-tab-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, #a1c4fd 0%, #c2e9fb 100%);
+    border-radius: 3px 3px 0 0;
+    box-shadow: 0 0 10px rgba(161, 196, 253, 0.5);
+    animation: slideInTab .3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInTab {
+    from {
+        width: 0;
+        left: 50%;
+    }
+
+    to {
+        width: 100%;
+        left: 0;
+    }
+}
+
+.tw-tab-icon {
+    display: flex;
+    align-items: center;
+}
+
+.tw-tab-icon .tw-icon {
+    width: 18px;
+    /* Slightly larger icons */
+    height: 18px;
+}
+
+/* === Lucide 图标通用样式 === */
+.tw-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+}
+
+.tw-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.tw-weather-icon svg {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    vertical-align: text-bottom;
+    opacity: 0.8;
+}
+
+/* === 音频控制按钮 === */
+.tw-audio-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all .2s ease;
+    opacity: 0.8;
+}
+
+.tw-audio-toggle:hover {
+    background: rgba(0, 0, 0, 0.2);
+    opacity: 1;
+}
+
+.tw-audio-toggle .tw-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.tw-audio-toggle.muted {
+    opacity: 0.5;
+}
+
+.tw-audio-toggle.muted:hover {
+    opacity: 0.8;
+}
+
+/* === 设置项图标 === */
+.tw-setting-icon {
+    width: 18px;
+    height: 18px;
+    margin-right: 6px;
+    opacity: 0.85;
+}
+
+/* === 设置页按钮样式 === */
+.tw-settings-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 5px;
+    margin-top: 15px;
+}
+
+.tw-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .2s ease;
+    width: 100%;
+    font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+}
+
+.tw-action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+.tw-action-btn.primary {
+    background: rgba(33, 150, 243, 0.2);
+    border-color: rgba(33, 150, 243, 0.4);
+    color: #64b5f6;
+}
+
+.tw-action-btn.primary:hover {
+    background: rgba(33, 150, 243, 0.3);
+}
+
+.tw-action-btn.danger {
+    background: rgba(244, 67, 54, 0.15);
+    border-color: rgba(244, 67, 54, 0.3);
+    color: #ef9a9a;
+}
+
+.tw-action-btn.danger:hover {
+    background: rgba(244, 67, 54, 0.25);
+}
+
+.tw-action-btn .tw-icon {
+    width: 18px;
+    height: 18px;
+    opacity: 0.9;
+}
+
+.tw-settings-grid {
+    display: grid;
+    /* 允许更窄的列宽以适应小屏 */
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 15px;
+    padding: 0 5px;
+}
+
+.tw-settings-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+    transition: all .3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.tw-settings-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.tw-settings-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    /* 允许小屏下标题与控件换行 */
+}
+
+.tw-settings-item-text {
+    flex: 1 1 auto;
+    min-width: 120px;
+    /* 确保文字有最小显示空间 */
+}
+
+.tw-settings-item-text h4 {
+    margin: 0 0 5px 0;
+    font-size: 1.1em;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.tw-settings-item-text p {
+    margin: 0;
+    font-size: 0.85em;
+    opacity: 0.6;
+    line-height: 1.4;
+}
+
+.tw-settings-control {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* 移除旧的 flex 设置项样式 */
+.tw-settings-item {
+    display: none;
+}
+
+.ws-separator {
+    display: none;
+}
+
+/* 覆盖旧样式，确保 toggle switch 可见 */
+.toggle-switch {
+    transform: scale(0.9);
 }
 
 .tw-content {
@@ -184,6 +453,7 @@
     position: relative;
     z-index: 1;
 }
+
 .tw-pane {
     position: absolute;
     top: 0;
@@ -198,9 +468,11 @@
     transition: opacity .3s ease-in-out, transform .3s ease-in-out;
     pointer-events: none;
 }
+
 #map-nav-pane {
     padding: 0;
 }
+
 .tw-pane.active {
     opacity: 1;
     transform: translateY(0);
@@ -225,7 +497,9 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 0; /* Behind content but above theme layers */
-    border-radius: 12px; /* Match panel rounding */
+    z-index: 0;
+    /* Behind content but above theme layers */
+    border-radius: 12px;
+    /* Match panel rounding */
     overflow: hidden;
 }

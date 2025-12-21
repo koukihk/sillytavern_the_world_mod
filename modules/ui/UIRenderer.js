@@ -3,6 +3,7 @@
  * @description Responsible for generating HTML content for the UI panes.
  */
 import { HOLIDAY_DATA } from '../utils/holidays.js';
+import { Icons, getIcon } from '../utils/icons.js';
 
 export class UIRenderer {
     constructor({ $, config, state, skyThemeController, mapSystem, logger, mapViewportManager }) {
@@ -22,10 +23,10 @@ export class UIRenderer {
             return container(`<div class="icon thunder-storm"><div class="cloud"></div><div class="lightning"><div class="bolt"></div><div class="bolt"></div></div></div>`);
         }
         if (weather.includes('雨')) {
-             if (weather.includes('晴')) {
+            if (weather.includes('晴')) {
                 return container(`<div class="icon sun-shower"><div class="cloud"></div><div class="sun"><div class="rays"></div></div><div class="rain"></div></div>`);
-             }
-             return container(`<div class="icon rainy"><div class="cloud"></div><div class="rain"></div></div>`);
+            }
+            return container(`<div class="icon rainy"><div class="cloud"></div><div class="rain"></div></div>`);
         }
         if (weather.includes('雪')) {
             return container(`<div class="icon flurries"><div class="cloud"></div><div class="snow"><div class="flake"></div><div class="flake"></div></div></div>`);
@@ -63,6 +64,18 @@ export class UIRenderer {
         const timeString = data['时间'] || '2024年01月01日-00:00';
         const seasonStr = data['季节'] || (timeString.match(/(春|夏|秋|冬)/) || [])[0];
 
+        // Season Emoji Logic (Moved to top)
+        let seasonDisplayHtml = '';
+        if (seasonStr) {
+            let emoji = '📅';
+            if (seasonStr.includes('春')) emoji = '🌸';
+            else if (seasonStr.includes('夏')) emoji = '🏖️';
+            else if (seasonStr.includes('秋')) emoji = '🍁';
+            else if (seasonStr.includes('冬')) emoji = '⛄️';
+
+            seasonDisplayHtml = `<span class="ws-season-emoji">${seasonStr}${emoji}</span>`;
+        }
+
         // New Time Parsing Logic
         const modernRegex = /(\d{4})[年-]?.*?(\d{1,2})[月-]?(\d{1,2})[日-]?.*?(\d{2}:\d{2})/;
         const fantasyRegex = /(\d{1,2}:\d{2})/;
@@ -86,10 +99,16 @@ export class UIRenderer {
             }
 
             const [hour, minute] = time.split(':');
+
+            // Season display (Text + Emoji)
+            const seasonPart = seasonDisplayHtml || '';
+
             timeHtml = `
                 <div class="ws-time-main" id="tw-time-display-main">${hour}<span>:${minute}</span></div>
                 <div class="ws-time-secondary">
-                    <div class="ws-date-full">${year} / ${String(month).padStart(2, '0')} / ${String(day).padStart(2, '0')}</div>
+                    <div class="ws-date-row">
+                        <div class="ws-date-full">${year} / ${String(month).padStart(2, '0')} / ${String(day).padStart(2, '0')} ${seasonPart}</div>
+                    </div>
                     ${weekdayHtml}
                 </div>
             `;
@@ -97,49 +116,79 @@ export class UIRenderer {
             const time = fantasyMatch[1];
             const datePart = timeString.replace(time, '').trim().replace(/,$/, '').trim();
             const [hour, minute] = time.split(':');
+            const seasonPart = seasonDisplayHtml || '';
             timeHtml = `
                 <div class="ws-time-main" id="tw-time-display-main">${hour}<span>:${minute}</span></div>
                 <div class="ws-time-secondary">
-                    <div class="ws-date-full-single">${datePart}</div>
+                    <div class="ws-date-row">
+                        <div class="ws-date-full-single">${datePart} ${seasonPart}</div>
+                    </div>
                 </div>
             `;
         } else {
             timeHtml = `<div class="ws-time-secondary"><div class="ws-date-full-single" id="tw-time-display-main">${timeString}</div></div>`;
         }
-        
-        const weatherIconHtml = this.getWeatherIconHtml(weather, period);
 
-        let seasonIcon = '📅';
-        if (seasonStr) {
-            if (seasonStr.includes('春')) seasonIcon = '🌸';
-            else if (seasonStr.includes('夏')) seasonIcon = '🏖️';
-            else if (seasonStr.includes('秋')) seasonIcon = '🍁';
-            else if (seasonStr.includes('冬')) seasonIcon = '⛄️';
-        }
-        
+        // Weather Icon mapping (Simple inline logic)
+        let iconName = 'cloud';
+        if (weather.includes('晴') || weather.includes('放晴')) iconName = 'sun';
+        else if (weather.includes('雷') || weather.includes('暴雨')) iconName = 'cloudLightning';
+        else if (weather.includes('雨')) iconName = 'cloudRain';
+        else if (weather.includes('雪')) iconName = 'cloudSnow';
+        else if (weather.includes('风')) iconName = 'wind';
+        else if (weather.includes('星') || weather.includes('流星') || weather.includes('萤火')) iconName = 'sparkles';
+
+        const largeWeatherIcon = getIcon(iconName);
+
+
+
         const contentHtml = `
             <div class="ws-details">
-                ${weatherIconHtml}
-                <div class="ws-time-interact" title="改变时间">
-                    <div class="ws-time-display">
-                        ${timeHtml}
+                <div class="ws-details-left">
+                    <div class="ws-time-interact" title="改变时间">
+                         <div class="ws-period-display">${period}</div>
+                         <div class="ws-time-display">
+                            ${timeHtml}
+                        </div>
                     </div>
                 </div>
-                <div class="ws-weather-interact" title="改变天气">
-                    <div class="ws-right">
-                        <div class="ws-summary">${period}</div>
-                        <div class="ws-date">${weather}</div>
+                
+                <div class="ws-details-right">
+                    <div class="ws-weather-interact" title="改变天气">
+                        <div class="ws-weather-large-icon">${largeWeatherIcon}</div>
+                        <div class="ws-weather-text">${weather}</div>
                     </div>
                 </div>
             </div>
             <div class="ws-content-inner">
                 <hr class="ws-separator">
                 <div class="ws-secondary-info">
-                     ${(seasonStr ? `<div class="ws-info-block"><span class="ws-label">${seasonIcon} 季节:</span><span class="ws-value">${seasonStr}</span></div>` : '')}
                      ${holidayHtml}
                 </div>
-                ${(data['场景'] ? `<div class="ws-info-block ws-scene-block"><span class="ws-label">🏞️ 场景:</span><div class="ws-value">${(data['场景'] || '').replace(/\[\[(.*?)\]\]/g, '<span class="ws-interactive-keyword" data-keyword="$1">$1</span>')}</div></div>` : '')}
-                ${(data['插图'] ? `<div class="ws-illustration-item"><a href="${this.config.IMAGE_BASE_URL}${data['插图']}" target="_blank" rel="noopener noreferrer"><img src="${this.config.IMAGE_BASE_URL}${data['插图']}" alt="${data['插图']}"></a></div>` : '')}
+                
+                <div class="ws-hero-section">
+                    <!-- Season Hero -->
+                    <!-- Season Hero Removed -->
+
+                    <!-- Scene Hero -->
+                    ${data['场景'] ? `
+                    <div class="ws-hero-item">
+                        <div class="ws-hero-label">${getIcon('image')} 场景</div>
+                        <div class="ws-hero-value scene">
+                            ${(data['场景'] || '').replace(/\[\[(.*?)\]\]/g, '<span class="ws-interactive-keyword" data-keyword="$1">$1</span>')}
+                        </div>
+                    </div>` : ''}
+
+                    <!-- Illustration -->
+                    ${data['插图'] ? `
+                    <div class="ws-illustration-item">
+                        <a href="${this.config.IMAGE_BASE_URL}${data['插图']}" target="_blank" rel="noopener noreferrer">
+                            <img src="${this.config.IMAGE_BASE_URL}${data['插图']}" 
+                                 alt="${data['插图']}"
+                                 onerror="this.parentElement.parentElement.style.display='none'">
+                        </a>
+                    </div>` : ''}
+                </div>
             </div>`;
         $pane.html(contentHtml);
     }
@@ -156,15 +205,15 @@ export class UIRenderer {
     async _renderAdvancedMapPane($pane) {
         const { mapDataManager, atlasManager } = this.mapSystem;
         const { advancedMapPathStack } = this.state;
-    
+
         const $mapContent = this.$('<div id="tw-advanced-map-content"></div>');
         $pane.append($mapContent);
-    
+
         const $editButton = this.$('<button id="tw-map-edit-toggle-btn" class="has-ripple">编辑地图 ✏️</button>');
         $mapContent.append($editButton);
-    
+
         if (!mapDataManager.isInitialized()) {
-             const $placeholder = this.$(`
+            const $placeholder = this.$(`
                 <div class="tw-map-placeholder">
                     <p class="tw-notice">当前角色没有地图档案。</p>
                     <button id="tw-create-map-placeholder-btn" class="tw-create-map-button has-ripple">
@@ -174,43 +223,43 @@ export class UIRenderer {
                         或者，让AI在故事中通过 &lt;MapUpdate&gt; 标签自动创建。
                     </p>
                 </div>`);
-             $mapContent.append($placeholder);
-             return;
+            $mapContent.append($placeholder);
+            return;
         }
-    
+
         const isIndoor = advancedMapPathStack.length > 0;
         let nodesToRender = [];
         let currentBuildingNode = null;
-    
+
         if (isIndoor) {
             this.logger.log('[Map Renderer] Rendering "Indoor" view.');
             const currentBuildingId = advancedMapPathStack[advancedMapPathStack.length - 1];
             currentBuildingNode = mapDataManager.nodes.get(currentBuildingId);
             nodesToRender = Array.from(mapDataManager.nodes.values()).filter(node => node.parentId === currentBuildingId);
-            
+
             const $breadcrumbs = this.$('<div class="tw-adv-map-breadcrumbs"></div>');
             $breadcrumbs.append('<span class="tw-adv-map-breadcrumb-item tw-adv-map-breadcrumb-item-root">世界</span>');
-            
+
             let path = [];
             let currentNode = currentBuildingNode;
-            while(currentNode) {
+            while (currentNode) {
                 path.unshift(currentNode);
                 currentNode = currentNode.parentId ? mapDataManager.nodes.get(currentNode.parentId) : null;
             }
 
             path.forEach((node, index) => {
-                 $breadcrumbs.append('<span>&nbsp;/&nbsp;</span>');
-                 $breadcrumbs.append(
+                $breadcrumbs.append('<span>&nbsp;/&nbsp;</span>');
+                $breadcrumbs.append(
                     `<span class="tw-adv-map-breadcrumb-item ${index === path.length - 1 ? 'current' : ''}" data-index="${index}">${node.name}</span>`
                 );
             });
             $mapContent.append($breadcrumbs);
-    
+
         } else {
             this.logger.log('[Map Renderer] Rendering "Outdoor" view.');
             nodesToRender = Array.from(mapDataManager.nodes.values());
         }
-    
+
         const $viewport = this.$('<div class="tw-map-viewport"></div>');
         $mapContent.append($viewport);
 
@@ -218,19 +267,19 @@ export class UIRenderer {
         const $rulerY = this.$('<div class="tw-map-ruler-y"></div>');
         const $rulerCorner = this.$('<div class="tw-map-ruler-corner"></div>');
         $mapContent.append($rulerX, $rulerY, $rulerCorner);
-    
+
         const vw = $viewport.width();
         const vh = $viewport.height();
-        
+
         const canvasSize = isIndoor ? 800 : 1200;
         const logicalMax = isIndoor ? 30 : 1200;
 
         const canvasOffsetLeft = (vw - canvasSize) / 2;
         const canvasOffsetTop = (vh - canvasSize) / 2;
         const canvasCss = { width: `${canvasSize}px`, height: `${canvasSize}px`, left: `${canvasOffsetLeft}px`, top: `${canvasOffsetTop}px` };
-    
+
         const $canvas = this.$('<div class="tw-map-canvas"></div>').css(canvasCss);
-        
+
         if (isIndoor && currentBuildingNode && currentBuildingNode.mapImage) {
             const imageUrl = `${this.config.IMAGE_BASE_URL}${currentBuildingNode.mapImage}`;
             $canvas.css('background-image', `url(${imageUrl})`);
@@ -242,9 +291,9 @@ export class UIRenderer {
                 this.logger.log(`[UIRenderer] Applied global map background: ${globalBgUrl}`);
             }
         }
-    
+
         const $svgLayer = this.$(`<svg class="tw-map-lines-svg"></svg>`).css(canvasCss);
-    
+
         const nodesWithChildren = new Map();
         mapDataManager.nodes.forEach(node => {
             if (node.parentId && mapDataManager.nodes.has(node.parentId)) {
@@ -254,13 +303,13 @@ export class UIRenderer {
                 nodesWithChildren.get(node.parentId).push(node);
             }
         });
-    
+
         nodesToRender.forEach(node => {
             if (node.coords) {
                 const [x, y] = node.coords.split(',').map(Number);
                 const leftPercent = (x / logicalMax) * 100;
                 const topPercent = (y / logicalMax) * 100;
-                
+
                 const enterableTypes = ['building', 'dungeon', 'landmark', 'shop', 'house', 'camp'];
                 const isEnterable = enterableTypes.includes(node.type);
 
@@ -276,20 +325,20 @@ export class UIRenderer {
                 } else {
                     $pin.addClass('is-parent-node');
                 }
-                
+
                 const $pinLabel = this.$(`<div class="tw-map-pin-label">${node.name}</div>`);
                 $pin.append($pinLabel);
                 $canvas.append($pin);
             }
         });
-    
+
         $viewport.append($canvas, $svgLayer);
-    
+
         if (!isIndoor) {
             const $sidebar = this.$('<div class="tw-map-sidebar"><h4>孤立节点</h4><p style="font-size:0.8em; opacity:0.7; padding: 0 10px;">拖拽到地图上以设置坐标。</p></div>');
             const unplottedNodes = Array.from(mapDataManager.nodes.values()).filter(node => !node.coords);
             if (unplottedNodes.length > 0) {
-                 const nodeMap = new Map(unplottedNodes.map(node => [node.id, { ...node, children: [] }]));
+                const nodeMap = new Map(unplottedNodes.map(node => [node.id, { ...node, children: [] }]));
                 const roots = [];
                 nodeMap.forEach(node => {
                     if (node.parentId && nodeMap.has(node.parentId)) {
@@ -319,7 +368,7 @@ export class UIRenderer {
                 $viewport.append($sidebar);
             }
         }
-    
+
         const isPlayerLocationKnown = !!this.state.currentPlayerLocationId;
         const recenterTitle = isPlayerLocationKnown ? '跳转至当前位置' : '重置地图视图';
         const $zoomControls = this.$(`
@@ -344,7 +393,7 @@ export class UIRenderer {
         const { liteMapPathStack } = this.state;
 
         if (!mapDataManager.isInitialized()) {
-             $pane.html(`
+            $pane.html(`
                 <div class="tw-map-placeholder" style="padding:15px;">
                     <p class="tw-notice">当前角色没有地图档案。</p>
                     <button id="tw-create-map-placeholder-btn" class="tw-create-map-button has-ripple">
@@ -354,13 +403,13 @@ export class UIRenderer {
                         或者，让AI在故事中通过 &lt;MapUpdate&gt; 标签自动创建。
                     </p>
                 </div>`);
-             return;
+            return;
         }
 
         // 1. Render Breadcrumbs
         const $breadcrumbs = this.$('<div class="tw-lite-map-breadcrumbs"></div>');
         $breadcrumbs.append('<span class="tw-lite-map-breadcrumb-item tw-lite-map-breadcrumb-item-root">世界</span>');
-        
+
         liteMapPathStack.forEach((nodeId, index) => {
             const node = mapDataManager.nodes.get(nodeId);
             if (node) {
@@ -375,10 +424,10 @@ export class UIRenderer {
 
         // 2. Render Node List
         const currentParentId = liteMapPathStack.length > 0 ? liteMapPathStack[liteMapPathStack.length - 1] : null;
-        
+
         const children = Array.from(mapDataManager.nodes.values()).filter(node => {
             return (currentParentId === null && !node.parentId) || node.parentId === currentParentId;
-        }).sort((a,b) => a.name.localeCompare(b.name));
+        }).sort((a, b) => a.name.localeCompare(b.name));
 
         const $list = this.$('<ul class="tw-lite-map-list"></ul>');
         if (children.length === 0) {
@@ -417,148 +466,151 @@ export class UIRenderer {
         }
         return '🌍'; // Default icon
     }
-    
+
     renderSettingsPane($pane) {
         $pane.empty();
 
-        const settingsContent = `
-            <div class="settings-item">
-                <div class="settings-item-text">
-                    <h4>地图模式</h4>
-                    <p>在简洁的列表视图和高级的画布视图之间切换。</p>
+        // 辅助函数：生成带图标的设置项标题
+        const settingTitle = (iconName, title) => `${getIcon(iconName, 'tw-setting-icon')} ${title}`;
+
+        // 辅助函数：生成卡片结构
+        const createCard = (titleHtml, desc, controlHtml) => `
+            <div class="tw-settings-card">
+                <div class="tw-settings-card-header">
+                    <div class="tw-settings-item-text">
+                        <h4>${titleHtml}</h4>
+                        <p>${desc}</p>
+                    </div>
                 </div>
-                <div class="tw-map-mode-switch">
-                    <button data-mode="lite" class="${this.state.mapMode === 'lite' ? 'active' : ''}">轻量模式</button>
-                    <button data-mode="advanced" class="${this.state.mapMode === 'advanced' ? 'active' : ''}">高级模式</button>
-                </div>
-            </div>
-            <hr class="ws-separator">
-            <div class="settings-item">
-                <div class="settings-item-text">
-                    <h4>字体大小</h4>
-                    <p>调整世界仪表盘内所有文本的字体大小。</p>
-                </div>
-                <div class="select-container">
-                    <select id="font-size-select">
-                        <option value="12px" ${this.state.fontSize === '12px' ? 'selected' : ''}>小</option>
-                        <option value="14px" ${this.state.fontSize === '14px' ? 'selected' : ''}>默认</option>
-                        <option value="16px" ${this.state.fontSize === '16px' ? 'selected' : ''}>中</option>
-                        <option value="18px" ${this.state.fontSize === '18px' ? 'selected' : ''}>大</option>
-                    </select>
-                </div>
-            </div>
-            <hr class="ws-separator">
-            <div class="settings-item">
-                <div class="settings-item-text">
-                    <h4>动态背景</h4>
-                    <p>根据游戏内时间，将动态渐变色应用为酒馆背景。</p>
-                </div>
-                <div class="toggle-switch">
-                    <input type="checkbox" id="global-theme-toggle" ${this.state.isGlobalThemeEngineEnabled ? 'checked' : ''}>
-                    <label for="global-theme-toggle"></label>
-                </div>
-            </div>
-            <div class="settings-item">
-                <div class="settings-item-text">
-                    <h4>沉浸模式</h4>
-                    <p>让聊天界面变为半透明的“毛玻璃”效果，透出动态背景。 (需要“动态背景”开启)</p>
-                </div>
-                <div class="toggle-switch">
-                    <input type="checkbox" id="immersive-mode-toggle" ${this.state.isImmersiveModeEnabled ? 'checked' : ''} ${!this.state.isGlobalThemeEngineEnabled ? 'disabled' : ''}>
-                    <label for="immersive-mode-toggle"></label>
-                </div>
-            </div>
-            <hr class="ws-separator">
-            <div class="settings-item">
-                <div class="settings-item-text">
-                    <h4>开启音频</h4>
-                    <p>启用或禁用所有环境音和音效。</p>
-                </div>
-                <div class="toggle-switch">
-                    <input type="checkbox" id="audio-enabled-toggle" ${this.state.isAudioEnabled ? 'checked' : ''}>
-                    <label for="audio-enabled-toggle"></label>
-                </div>
-            </div>
-            <div class="settings-item">
-                 <div class="settings-item-text">
-                    <h4>环境音音量</h4>
-                </div>
-                <div class="slider-container" style="width: 150px;">
-                    <input type="range" id="ambient-volume-slider" min="0" max="1" step="0.05" value="${this.state.ambientVolume}">
-                    <span id="ambient-volume-value" class="slider-value">${Math.round(this.state.ambientVolume * 100)}%</span>
-                </div>
-            </div>
-            <div class="settings-item">
-                 <div class="settings-item-text">
-                    <h4>音效音量</h4>
-                </div>
-                 <div class="slider-container" style="width: 150px;">
-                    <input type="range" id="sfx-volume-slider" min="0" max="1" step="0.05" value="${this.state.sfxVolume}">
-                    <span id="sfx-volume-value" class="slider-value">${Math.round(this.state.sfxVolume * 100)}%</span>
-                </div>
-            </div>
-            <hr class="ws-separator">
-             <div class="settings-item">
-                <div class="settings-item-text">
-                    <h4>全局天气特效</h4>
-                    <p>让雨、雪等粒子效果在整个屏幕上显示，而不是仅在面板内。</p>
-                </div>
-                <div class="toggle-switch">
-                    <input type="checkbox" id="fx-global-toggle" ${this.state.isFxGlobal ? 'checked' : ''}>
-                    <label for="fx-global-toggle"></label>
-                </div>
-            </div>
-            <div class="settings-item">
-                <div class="settings-item-text">
-                    <h4>显示雨滴特效</h4>
-                    <p>在雨天时，模拟雨滴落在玻璃上的视觉效果。</p>
-                </div>
-                <div class="toggle-switch">
-                    <input type="checkbox" id="raindrop-fx-toggle" ${this.state.isRaindropFxOn ? 'checked' : ''}>
-                    <label for="raindrop-fx-toggle"></label>
-                </div>
-            </div>
-            <div class="settings-item">
-                <div class="settings-item-text">
-                    <h4>天气粒子特效</h4>
-                    <p>启用或禁用雨、雪、风等粒子效果。</p>
-                </div>
-                <div class="toggle-switch">
-                    <input type="checkbox" id="weather-fx-toggle" ${this.state.weatherFxEnabled ? 'checked' : ''}>
-                    <label for="weather-fx-toggle"></label>
-                </div>
-            </div>
-            <div class="settings-item">
-                <div class="settings-item-text">
-                    <h4>3D云效</h4>
-                    <p>启用或禁用动态的3D体积云效果。</p>
-                </div>
-                <div class="toggle-switch">
-                    <input type="checkbox" id="cloud-fx-toggle" ${this.state.isCloudFxEnabled ? 'checked' : ''}>
-                    <label for="cloud-fx-toggle"></label>
-                </div>
-            </div>
-            <hr class="ws-separator">
-             <div class="settings-item">
-                <div class="settings-item-text">
-                    <h4>天色主题</h4>
-                    <p>选择一个预设的天空颜色方案。</p>
+                <div class="tw-settings-control">
+                    ${controlHtml}
                 </div>
             </div>
         `;
-        $pane.append(settingsContent);
 
-        const $themeList = this.$('<div class="theme-list"></div>');
+        const gridContent = `
+            <div class="tw-settings-grid">
+                ${createCard(
+            settingTitle('mapPin', '地图模式'),
+            '在简洁的列表视图和高级的画布视图之间切换。',
+            `<div class="tw-map-mode-switch">
+                        <button data-mode="lite" class="${this.state.mapMode === 'lite' ? 'active' : ''}">轻量模式</button>
+                        <button data-mode="advanced" class="${this.state.mapMode === 'advanced' ? 'active' : ''}">高级模式</button>
+                    </div>`
+        )}
+
+                ${createCard(
+            settingTitle('type', '字体大小'),
+            '调整世界仪表盘内所有文本的字体大小。',
+            `<div class="tw-select-container">
+                        <select id="font-size-select">
+                            <option value="12px" ${this.state.fontSize === '12px' ? 'selected' : ''}>小</option>
+                            <option value="14px" ${this.state.fontSize === '14px' ? 'selected' : ''}>默认</option>
+                            <option value="16px" ${this.state.fontSize === '16px' ? 'selected' : ''}>中</option>
+                            <option value="18px" ${this.state.fontSize === '18px' ? 'selected' : ''}>大</option>
+                        </select>
+                    </div>`
+        )}
+
+                ${createCard(
+            settingTitle('sun', '动态背景'),
+            '根据游戏内时间，将动态渐变色应用为酒馆背景。',
+            `<div class="toggle-switch">
+                        <input type="checkbox" id="global-theme-toggle" ${this.state.isGlobalThemeEngineEnabled ? 'checked' : ''}>
+                        <label for="global-theme-toggle"></label>
+                    </div>`
+        )}
+
+                ${createCard(
+            settingTitle('eye', '沉浸模式'),
+            '让聊天界面变为半透明的"毛玻璃"效果，透出动态背景。',
+            `<div class="toggle-switch">
+                        <input type="checkbox" id="immersive-mode-toggle" ${this.state.isImmersiveModeEnabled ? 'checked' : ''} ${!this.state.isGlobalThemeEngineEnabled ? 'disabled' : ''}>
+                        <label for="immersive-mode-toggle"></label>
+                    </div>`
+        )}
+
+                ${createCard(
+            settingTitle('music', '开启音频'),
+            '启用或禁用所有环境音和音效。',
+            `<div class="toggle-switch">
+                        <input type="checkbox" id="audio-enabled-toggle" ${this.state.isAudioEnabled ? 'checked' : ''}>
+                        <label for="audio-enabled-toggle"></label>
+                    </div>`
+        )}
+
+                ${createCard(
+            settingTitle('volume1', '环境音音量'),
+            '调整背景环境音的音量大小。',
+            `<div class="tw-slider-container" style="width: 100%;">
+                        <input type="range" id="ambient-volume-slider" min="0" max="1" step="0.05" value="${this.state.ambientVolume}">
+                        <span id="ambient-volume-value" class="tw-slider-value">${Math.round(this.state.ambientVolume * 100)}%</span>
+                    </div>`
+        )}
+
+                ${createCard(
+            settingTitle('zap', '音效音量'),
+            '调整动作和事件音效的音量大小。',
+            `<div class="tw-slider-container" style="width: 100%;">
+                        <input type="range" id="sfx-volume-slider" min="0" max="1" step="0.05" value="${this.state.sfxVolume}">
+                        <span id="sfx-volume-value" class="tw-slider-value">${Math.round(this.state.sfxVolume * 100)}%</span>
+                    </div>`
+        )}
+
+                ${createCard(
+            settingTitle('globe', '全局天气特效'),
+            '让雨、雪等粒子效果在整个屏幕上显示。',
+            `<div class="toggle-switch">
+                        <input type="checkbox" id="fx-global-toggle" ${this.state.isFxGlobal ? 'checked' : ''}>
+                        <label for="fx-global-toggle"></label>
+                    </div>`
+        )}
+
+                ${createCard(
+            settingTitle('droplets', '显示雨滴特效'),
+            '在雨天时，模拟雨滴落在玻璃上的视觉效果。',
+            `<div class="toggle-switch">
+                        <input type="checkbox" id="raindrop-fx-toggle" ${this.state.isRaindropFxOn ? 'checked' : ''}>
+                        <label for="raindrop-fx-toggle"></label>
+                    </div>`
+        )}
+
+                ${createCard(
+            settingTitle('cloudRain', '天气粒子特效'),
+            '启用或禁用雨、雪、风等粒子效果。',
+            `<div class="toggle-switch">
+                        <input type="checkbox" id="weather-fx-toggle" ${this.state.weatherFxEnabled ? 'checked' : ''}>
+                        <label for="weather-fx-toggle"></label>
+                    </div>`
+        )}
+
+                ${createCard(
+            settingTitle('sparkles', '高性能特效'),
+            '启用或禁用3D云、樱花、烟花等高消耗特效。',
+            `<div class="toggle-switch">
+                        <input type="checkbox" id="high-performance-fx-toggle" ${this.state.isHighPerformanceFxEnabled ? 'checked' : ''}>
+                        <label for="high-performance-fx-toggle"></label>
+                    </div>`
+        )}
+            </div>
+            
+            <div class="tw-settings-section-title" style="margin: 20px 0 10px 5px; opacity: 0.8; font-weight: 600;">
+                ${settingTitle('palette', '天色主题')}
+            </div>
+        `;
+        $pane.append(gridContent);
+
+        const $themeList = this.$('<div class="tw-theme-list"></div>');
         if (this.skyThemeController && this.skyThemeController.availableThemes) {
             this.skyThemeController.availableThemes.forEach(theme => {
                 const isActive = this.state.activeSkyThemeId === theme.id;
                 const $card = this.$(`
-                    <div class="theme-card ${isActive ? 'active' : ''}" data-theme-id="${theme.id}">
+                    <div class="tw-theme-card ${isActive ? 'active' : ''}" data-theme-id="${theme.id}">
                         <h4>${theme.name}</h4>
                         <p>作者: ${theme.author}</p>
-                        <div class="theme-actions">
-                            <button class="btn-preview has-ripple">预览</button>
-                            <button class="btn-activate has-ripple">${isActive ? '当前' : '启用'}</button>
+                        <div class="tw-theme-actions">
+                            <button class="tw-btn-preview has-ripple">预览</button>
+                            <button class="tw-btn-activate has-ripple">${isActive ? '当前' : '启用'}</button>
                         </div>
                     </div>
                 `);
@@ -569,40 +621,36 @@ export class UIRenderer {
         $pane.append('<hr class="ws-separator">');
 
         const managementContent = this.$(`
-            <div>
-                <div class="settings-item">
-                    <div class="settings-item-text">
-                        <h4>地图与数据</h4>
-                    </div>
+            <div style="margin-top: 20px;">
+                <div class="tw-settings-section-title" style="margin: 0 0 10px 5px; opacity: 0.8; font-weight: 600;">
+                    ${settingTitle('database', '数据与管理')}
                 </div>
-                ${!this.mapSystem.mapDataManager.isInitialized() ? `
-                    <div class="settings-item">
-                        <div class="settings-item-text">
-                            <p>为当前角色创建一个新的地图档案世界书。</p>
-                        </div>
-                        <button id="tw-create-map-btn" class="clear-data-btn has-ripple" style="border-color: #2ecc71; color: #2ecc71;">🗺️ 创建地图档案</button>
-                    </div>
-                ` : `
-                    <div class="settings-item">
-                        <div class="settings-item-text">
-                            <p>地图档案已连接: <b>${this.mapSystem.mapDataManager.bookName}</b></p>
-                        </div>
-                    </div>
-                `}
-                <div class="settings-item">
-                    <div class="settings-item-text">
-                        <h4>数据存储</h4>
-                        <p>清空此扩展在浏览器中存储的所有数据（包括设置和缓存）。</p>
-                    </div>
-                    <button id="clear-all-data-btn" class="clear-data-btn has-ripple">🗑️ 清空所有存储</button>
+                
+                <div class="tw-settings-actions-grid">
+                    ${!this.mapSystem.mapDataManager.isInitialized() ? `
+                        <button id="tw-create-map-btn" class="tw-action-btn primary has-ripple">
+                            ${getIcon('folderPlus')} 创建地图档案
+                        </button>
+                    ` : `
+                        <button id="tw-reset-map-btn" class="tw-action-btn primary has-ripple">
+                            ${getIcon('save')} 初始化地图
+                        </button>
+                    `}
+                    
+                    <button id="reset-ui-btn" class="tw-action-btn has-ripple">
+                        ${getIcon('move')} 重置UI位置
+                    </button>
+                    
+                    <button id="clear-all-data-btn" class="tw-action-btn danger has-ripple" style="grid-column: span 2;">
+                        ${getIcon('trash2')} 清空所有存储
+                    </button>
                 </div>
-                <div class="settings-item">
-                   <div class="settings-item-text">
-                       <h4>UI 管理</h4>
-                        <p>如果面板被意外移出屏幕，此按钮可以将其复位到右上角。</p>
-                   </div>
-                   <button id="reset-ui-btn" class="clear-data-btn has-ripple">🔄️ 重置UI位置</button>
-               </div>
+                
+                ${this.mapSystem.mapDataManager.isInitialized() ? `
+                    <div style="margin: 10px 5px 0 5px; font-size: 0.8em; opacity: 0.6; text-align: center;">
+                        当前地图: ${this.mapSystem.mapDataManager.bookName}
+                    </div>
+                ` : ''}
             </div>
         `);
         $pane.append(managementContent);

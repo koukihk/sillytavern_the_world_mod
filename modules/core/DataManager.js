@@ -27,7 +27,11 @@ export class DataManager {
 
     loadState() {
         this.logger.log('正在从 localStorage 加载状态...');
-        this.state.latestWorldStateData = this._storage('load', this.config.STORAGE_KEYS.WORLD_STATE);
+        const loadedWorldState = this._storage('load', this.config.STORAGE_KEYS.WORLD_STATE);
+        if (loadedWorldState) {
+            this.state.latestWorldStateData = loadedWorldState;
+        }
+        // Only load map data if it exists, otherwise keep it null
         this.state.latestMapData = this._storage('load', this.config.STORAGE_KEYS.MAP_DATA);
         const settings = this._storage('load', this.config.STORAGE_KEYS.SETTINGS) || {};
         this.logger.log('加载到的设置:', settings);
@@ -44,7 +48,7 @@ export class DataManager {
         assignSetting('isImmersiveModeEnabled', this.state.isImmersiveModeEnabled);
         assignSetting('isRaindropFxOn', this.state.isRaindropFxOn);
         assignSetting('weatherFxEnabled', this.state.weatherFxEnabled);
-        assignSetting('isCloudFxEnabled', this.state.isCloudFxEnabled);
+        assignSetting('isHighPerformanceFxEnabled', this.state.isHighPerformanceFxEnabled);
         assignSetting('locationFxEnabled', this.state.locationFxEnabled);
         assignSetting('celestialFxEnabled', this.state.celestialFxEnabled);
         assignSetting('panelWidth', this.state.panelWidth);
@@ -72,7 +76,7 @@ export class DataManager {
             isImmersiveModeEnabled: this.state.isImmersiveModeEnabled,
             isRaindropFxOn: this.state.isRaindropFxOn,
             weatherFxEnabled: this.state.weatherFxEnabled,
-            isCloudFxEnabled: this.state.isCloudFxEnabled,
+            isHighPerformanceFxEnabled: this.state.isHighPerformanceFxEnabled,
             locationFxEnabled: this.state.locationFxEnabled,
             celestialFxEnabled: this.state.celestialFxEnabled,
             panelWidth: this.state.panelWidth,
@@ -96,7 +100,7 @@ export class DataManager {
         
         // Reset state to defaults
         this.state.latestMapData = null;
-        this.state.latestWorldStateData = null;
+        // Do NOT reset latestWorldStateData to null, let it keep its default structure
         this.state.isPanelVisible = false;
         this.state.selectedMainLocation = null;
         this.state.selectedSubLocation = null;

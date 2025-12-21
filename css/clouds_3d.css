@@ -5,19 +5,24 @@
  */
 
 #clouds-viewport {
-	-webkit-perspective: 1000px; 
-	-moz-perspective: 1000px; 
-	-ms-perspective: 1000px; 
-	-o-perspective: 1000px; 
-	perspective: 1000px; 
+	-webkit-perspective: 1000px;
+	-moz-perspective: 1000px;
+	-ms-perspective: 1000px;
+	-o-perspective: 1000px;
+	perspective: 1000px;
 	position: absolute;
 	left: 0;
 	top: 0;
 	right: 0;
-	bottom: 0; /* Changed */
+	bottom: 0;
+	/* Changed */
 	overflow: hidden;
-    z-index: -1;
-    /* Background is transparent, handled by the main theme engine */
+	z-index: -1;
+	/* Background is transparent, handled by the main theme engine */
+	/* GPU 加速和 3D 渲染上下文保持 */
+	transform: translateZ(0);
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
 }
 
 #clouds-world {
@@ -40,7 +45,7 @@
 	-moz-transform-style: preserve-3d;
 	-ms-transform-style: preserve-3d;
 	-o-transform-style: preserve-3d;
-	transform-style: preserve-3d;	
+	transform-style: preserve-3d;
 }
 
 .cloudBase {
@@ -63,5 +68,6 @@
 	margin-top: -128px;
 	transition: opacity .5s ease-out, filter 2.5s ease-in-out;
 	background-image: url('../assets/images/cloud.png');
-	will-change: transform, opacity, filter; /* Performance Optimization */
+	will-change: transform, opacity, filter;
+	/* Performance Optimization */
 }

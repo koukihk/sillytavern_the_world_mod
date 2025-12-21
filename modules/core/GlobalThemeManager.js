@@ -17,6 +17,7 @@ export class GlobalThemeManager {
         this.bgLayer2 = null;
         this.activeLayer = 1;
         this.currentBackground = null;
+        this.currentBrightness = null; // New: track brightness
     }
 
     activate() {
@@ -54,7 +55,7 @@ export class GlobalThemeManager {
         const periodString = data['时段']; // Pass period string if available
         const theme = this.timeGradient.getThemeForTime({ timeString, weatherString, periodString });
 
-        this._updateBackground(theme.background);
+        this._updateBackground(theme.background, theme.brightness);
         this._applyThemeStyles();
     }
     
@@ -78,19 +79,44 @@ export class GlobalThemeManager {
         this.currentBackground = null;
     }
 
-    _updateBackground(newBackground) {
-        // Only create layers when a background is first applied
-        if (!this.bgLayer1) {
-            this._ensureBgLayers();
-        }
+    _updateBackground(newBackground, newBrightness) {
+        this._ensureBgLayers();
 
         if (newBackground === this.currentBackground) {
             return;
         }
 
+        // --- Dark-to-Dark Fast Path ---
+        if (this.currentBrightness === 'dark' && newBrightness === 'dark') {
+            this.logger.log('[Global Theme] Executing dark-to-dark fast path.');
+            this.currentBackground = newBackground;
+            this.currentBrightness = newBrightness;
+            
+            // Immediately apply to both layers to prevent any flash
+            this.bgLayer1.style.transition = 'none';
+            this.bgLayer2.style.transition = 'none';
+            
+            if (this.activeLayer === 1) {
+                this.bgLayer1.style.background = newBackground;
+            } else {
+                this.bgLayer2.style.background = newBackground;
+            }
+            
+            // Use a timeout to re-enable transitions after the immediate paint
+            setTimeout(() => {
+                if (this.bgLayer1) this.bgLayer1.style.transition = 'opacity 9s ease-in-out';
+                if (this.bgLayer2) this.bgLayer2.style.transition = 'opacity 9s ease-in-out';
+            }, 50);
+            return;
+        }
+
+        // --- Standard Cross-Fade Path ---
         this.currentBackground = newBackground;
+        this.currentBrightness = newBrightness;
 
         requestAnimationFrame(() => {
+            if (!this.bgLayer1 || !this.bgLayer2) return; // Guard against layers being removed
+            
             if (this.activeLayer === 1) {
                 this.bgLayer2.style.background = newBackground;
                 this.bgLayer1.style.opacity = 0;

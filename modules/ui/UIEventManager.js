@@ -52,7 +52,7 @@ export class UIEventManager {
         this.logger.log('正在绑定所有UI事件...');
         const $body = this.$('body');
         const $panel = this.$(`#${this.config.PANEL_ID}`);
-        
+
         // Toggle Button - with long press for Skygazing and short press for panel toggle
         const $toggleBtn = this.$(`#${this.config.TOGGLE_BUTTON_ID}`);
         const clearLongPress = () => {
@@ -89,18 +89,18 @@ export class UIEventManager {
                 const pressDuration = Date.now() - this.pressStartTime;
                 clearLongPress();
                 if (pressDuration < 500) {
-                     this.panelManager.togglePanel();
+                    this.panelManager.togglePanel();
                 }
             })
             .on('mouseleave.tw_toggle', clearLongPress);
-        
+
         this.panelManager.makeDraggable($toggleBtn, $toggleBtn, true);
 
         // Panel Interactions
         this.panelManager.makeDraggable($panel, $panel.find(`.${this.config.HEADER_CLASS}`));
         this.panelManager.makeResizable($panel, $panel.find('.tw-resize-handle'));
         $panel.on('click.tw_panel', '.tw-close', () => this.panelManager.togglePanel(false));
-        
+
         // Tabs
         $body.on('click.tw_tabs', `#${this.config.PANEL_ID} .tw-tab-link`, (e) => {
             const $this = this.$(e.currentTarget);
@@ -118,6 +118,14 @@ export class UIEventManager {
         $panel.on('click.tw_content', '.character_name.interactive', (e) => {
             e.stopPropagation();
             this.dialogs.showNpcInteractDialog(this.$(e.target).closest('.character_name').data('name'));
+        });
+
+        // Audio Toggle Button
+        $panel.on('click.tw_audio', '#tw-audio-toggle', () => {
+            this.state.isAudioEnabled = !this.state.isAudioEnabled;
+            this.audioManager.setMasterEnabled(this.state.isAudioEnabled);
+            this.dataManager.saveState();
+            this.ui.updateAudioToggleIcon();
         });
 
         // Settings Pane
@@ -156,25 +164,25 @@ export class UIEventManager {
         // Delegate map-specific events to the managers
         this.mapViewportManager.bindEvents();
         this.mapEditorManager.bindEvents();
-        
+
         // Advanced Map Click Handlers (Non-Editor Mode)
         this.bindAdvancedMapInteractionEvents($body);
-        
+
         // Lite Map Navigation Events
         this.bindLiteMapNavEvents($body);
     }
 
     bindSettingsEvents($panel) {
-        $panel.on('click.tw_settings', '.btn-activate', async (e) => {
+        $panel.on('click.tw_settings', '.tw-btn-activate', async (e) => {
             const $button = this.$(e.currentTarget);
             if ($button.text() === '当前') return;
-            const themeId = $button.closest('.theme-card').data('theme-id');
+            const themeId = $button.closest('.tw-theme-card').data('theme-id');
             await this.skyThemeController.applyTheme(themeId);
             this.renderer.renderSettingsPane(this.$('#settings-pane'));
         });
-        
-        $panel.on('click.tw_settings', '.btn-preview', (e) => {
-            const themeId = this.$(e.currentTarget).closest('.theme-card').data('theme-id');
+
+        $panel.on('click.tw_settings', '.tw-btn-preview', (e) => {
+            const themeId = this.$(e.currentTarget).closest('.tw-theme-card').data('theme-id');
             this.dialogs.showThemePreviewDialog(themeId);
         });
 
@@ -185,7 +193,7 @@ export class UIEventManager {
                 'fx-global-toggle': 'isFxGlobal',
                 'raindrop-fx-toggle': 'isRaindropFxOn',
                 'weather-fx-toggle': 'weatherFxEnabled',
-                'cloud-fx-toggle': 'isCloudFxEnabled',
+                'high-performance-fx-toggle': 'isHighPerformanceFxEnabled',
                 'audio-enabled-toggle': 'isAudioEnabled'
             };
             const key = keyMap[e.target.id];
@@ -211,7 +219,7 @@ export class UIEventManager {
             const $button = this.$(e.currentTarget);
             const newMode = $button.data('mode');
             if (this.state.mapMode === newMode) return;
-        
+
             this.state.mapMode = newMode;
             this.state.liteMapPathStack = [];
             this.state.advancedMapPathStack = [];
@@ -219,11 +227,11 @@ export class UIEventManager {
             await this.renderer.renderMapPane(this.$('#map-nav-pane'));
             $button.addClass('active').siblings().removeClass('active');
         });
-        
+
         $panel.on('input.tw_settings', '#settings-pane input[type="range"]', (e) => {
             const value = parseFloat(e.target.value);
             const id = e.target.id;
-        
+
             if (id === 'ambient-volume-slider') {
                 this.state.ambientVolume = value;
                 this.audioManager.setAmbientVolume(value);
@@ -248,6 +256,16 @@ export class UIEventManager {
             if (confirm('确定要清空所有存储的数据吗？\n此操作无法撤销！')) {
                 this.dataManager.clearAllStorage();
                 await this.ui.updateAllPanes();
+            }
+        });
+        $panel.on('click.tw_settings', '#tw-reset-map-btn', async (e) => {
+            const $button = this.$(e.currentTarget);
+            if (confirm('确定要清空当前角色的所有地图数据吗？\n此操作无法撤销！')) {
+                $button.text('正在清空...').prop('disabled', true);
+                await this.mapSystem.resetMapData();
+                await this.ui.updateAllPanes();
+                this.toastr.success('地图数据已成功初始化！');
+                // No need to re-enable button as the pane will be re-rendered
             }
         });
         $panel.on('click.tw_settings', '#reset-ui-btn', () => {
@@ -278,7 +296,7 @@ export class UIEventManager {
         $body.on('click.tw_map_fit_bounds', '#tw-map-fit-bounds-btn', () => {
             this.mapViewportManager.fitToBounds();
         });
-        
+
         $body.on('click.tw_map_pin_action', '#map-nav-pane .tw-map-pin', async (e) => {
             if (this.mapEditorManager.isEditorActive()) return;
             e.stopPropagation();
@@ -304,7 +322,7 @@ export class UIEventManager {
             const nodeId = this.$(e.currentTarget).data('node-id');
             const node = this.mapSystem.mapDataManager.nodes.get(nodeId);
             if (!node) return;
-        
+
             if (this.renderer._nodeHasChildren(nodeId)) {
                 this.state.liteMapPathStack.push(nodeId);
                 await this.renderer.renderMapPane(this.$('#map-nav-pane'));
@@ -314,7 +332,7 @@ export class UIEventManager {
                 this.toastr.info(`正在尝试移动到: ${node.name}`);
             }
         });
-        
+
         $body.on('click.tw_map_nav_lite', '#map-nav-pane .tw-lite-map-breadcrumb-item[data-index]', async (e) => {
             const index = parseInt(this.$(e.currentTarget).data('index'), 10);
             this.state.liteMapPathStack = this.state.liteMapPathStack.slice(0, index + 1);
@@ -325,20 +343,20 @@ export class UIEventManager {
             await this.renderer.renderMapPane(this.$('#map-nav-pane'));
         });
     }
-    
+
     bindWindowEvents() {
         let resizeTimeout;
         this.win.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => this.ui.handleResize(), 150);
         });
-        
+
         const $winDoc = this.$(this.win.document);
         $winDoc.on('mouseup.tw_map_global_end touchend.tw_map_global_end', (e) => {
             this.mapViewportManager.handleMapPanEnd(e);
             this.mapEditorManager.handleDragEnd(e);
         });
-        
+
         $winDoc.on('mousemove.tw_map_global_move touchmove.tw_map_global_move', (e) => {
             this.mapViewportManager.handleMapPanMove(e);
             this.mapEditorManager.handleDragMove(e);

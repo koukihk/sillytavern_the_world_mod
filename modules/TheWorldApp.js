@@ -106,10 +106,9 @@ export class TheWorldApp {
 
         this.dataManager.loadState();
         await this.skyThemeController.init();
-        this.introAnimation = new IntroAnimation(this.dependencies);
-        await this.introAnimation.run();
-
-        this.uiController = new UIController({ 
+        
+        // Initialize UI Controller earlier
+        this.uiController = new UIController({
             ...this.dependencies,
             panelThemeManager: this.panelThemeManager,
             globalThemeManager: this.globalThemeManager,
@@ -118,14 +117,23 @@ export class TheWorldApp {
             dataManager: this.dataManager
         });
         this.dependencies.uiController = this.uiController;
+        await this.uiController.init();
+
+        // Run intro animation
+        this.introAnimation = new IntroAnimation(this.dependencies);
+        await this.introAnimation.run();
+
+        // Perform an immediate UI update with loaded/default state
+        this.logger.log(`Performing initial UI render with loaded/default state.`);
+        if (this.globalThemeManager.isActive) this.globalThemeManager.updateTheme();
+        await this.uiController.updateAllPanes();
 
         // Initialize MacroManager as soon as TavernHelper is available
         this.macroManager = new MacroManager(this.dependencies);
         this.macroManager.registerAll();
 
         // DEFERRED: CommandManager is now initialized in finalizeApiInitialization
-        await this.uiController.init(); 
-
+        
         if (TheWorldState.isGlobalThemeEngineEnabled) {
             this.logger.log("全局主题引擎在启动时已启用，正在激活...");
             this.globalThemeManager.activate();
@@ -158,11 +166,8 @@ export class TheWorldApp {
         if (lastId >= 0) {
             this.logger.log(`Existing chat detected. Performing initial state calculation...`);
             await this.recalculateAndSnapshot(lastId);
-        } else {
-            this.logger.log(`New chat detected. Updating UI with default state.`);
-            if (this.globalThemeManager.isActive) this.globalThemeManager.updateTheme();
-            await this.uiController.updateAllPanes();
         }
+        // The 'else' block is now redundant because the initial render is already done.
         
         this.logger.success(`[The World v${Config.VERSION}] Initialization complete.`);
     }
@@ -246,7 +251,7 @@ export class TheWorldApp {
                     }
 
                     if (this.mapSystem.mapDataManager.isInitialized()) {
-                        await this.mapSystem.mapDataManager.processMapUpdate(updateJson);
+                        await this.mapSystem.mapDataManager.processMapUpdate(updateJson, msgId);
                         await this.mapSystem.atlasManager.updateAtlas(); // Update the Atlas after map changes
                         updated = true;
                     }
@@ -347,11 +352,24 @@ export class TheWorldApp {
         eventSource.on(eventTypes.MESSAGE_SWIPED, (id) => this.debouncedProcessor(id, true)); 
         
         eventSource.on(eventTypes.MESSAGE_DELETED, async (id) => {
+            this.logger.log(`Message (ID: ${id}) deleted. Checking for map rollbacks.`);
+            const transactions = TheWorldState.lorebookTransactionHistory[id];
+            if (transactions && transactions.length > 0) {
+                this.logger.log(`Found ${transactions.length} map transactions to roll back for message ${id}.`);
+                for (const tx of transactions) {
+                    if (tx.type === 'add_entry') {
+                        await this.TavernHelper.deleteWorldbookEntries(tx.bookName, entry => entry.uid === tx.entryUid);
+                        this.logger.log(`Rolled back entry creation: UID ${tx.entryUid} in ${tx.bookName}`);
+                    }
+                }
+                delete TheWorldState.lorebookTransactionHistory[id];
+                await this.mapSystem.initializeData(this.mapSystem.mapDataManager.bookName);
+            }
+
             const lastMessageId = await this.TavernHelper.getLastMessageId();
             if (id === lastMessageId + 1 && this.previousStateSnapshot) {
                  this.logger.log(`Last message (ID: ${id}) deleted. Rolling back to previous state snapshot.`);
                  TheWorldState.latestWorldStateData = this.jQuery.extend(true, {}, this.previousStateSnapshot.worldState);
-                 TheWorldState.latestMapData = this.jQuery.extend(true, {}, this.previousStateSnapshot.map);
                  this.previousStateSnapshot = null;
                  
                  this.dataManager.saveState();
@@ -365,7 +383,6 @@ export class TheWorldApp {
                  if (currentLastId >= 0) {
                      await this.recalculateAndSnapshot(currentLastId);
                  } else {
-                     TheWorldState.latestMapData = {};
                      TheWorldState.latestWorldStateData = {};
                      this.previousStateSnapshot = null;
                      this.dataManager.saveState();
@@ -378,8 +395,9 @@ export class TheWorldApp {
         });
 
         eventSource.on(eventTypes.CHAT_CHANGED, async () => {
-            this.logger.log('Chat changed. Clearing snapshot and recalculating for new chat.');
+            this.logger.log('Chat changed. Clearing all transient state and recalculating for new chat.');
             this.previousStateSnapshot = null;
+            TheWorldState.lorebookTransactionHistory = {}; // Clear transaction history for new chat
 
             // Proactively initialize map data for the new chat
             const bookName = await this.mapSystem.lorebookManager.findBoundWorldbookName();

@@ -142,7 +142,8 @@ export class Clouds3dFX {
         this.world.appendChild(div);
 
         // PERFORMANCE OPTIMIZATION: Reduced the number of layers per cluster
-        for (let j = 0; j < 4 + Math.round(Math.random() * 4); j++) {
+        // PERFORMANCE OPTIMIZATION: Reduced the number of layers per cluster
+        for (let j = 0; j < 3 + Math.round(Math.random() * 2); j++) {
             const cloud = document.createElement('div');
             cloud.style.opacity = `${0.6 + Math.random() * 0.4}`;
             cloud.className = 'cloudLayer';
@@ -172,26 +173,15 @@ export class Clouds3dFX {
     _updateLoop() {
         if (!this.isActive) return;
 
-        this.worldYAngle += 0.005; 
-        this.worldXAngle += 0.002;
+        // Simplified rotation - only rotate the entire world, not individual layers against it
+        this.worldYAngle += 0.01; // Slightly increased speed to compensate for less complex motion
+        this.worldXAngle += 0.004;
 
         const t = `translateZ(${this.d}px) rotateX(${this.worldXAngle}deg) rotateY(${this.worldYAngle}deg)`;
         this.world.style.transform = t;
-
-        for (let j = 0; j < this.layers.length; j++) {
-            const layer = this.layers[j];
-            layer.dataset.a = parseFloat(layer.dataset.a) + parseFloat(layer.dataset.speed);
-            const transform = `
-                translateX(${layer.dataset.x}px) 
-                translateY(${layer.dataset.y}px) 
-                translateZ(${layer.dataset.z}px) 
-                rotateY(${-this.worldYAngle}deg) 
-                rotateX(${-this.worldXAngle}deg) 
-                rotateZ(${layer.dataset.a}deg) 
-                scale(${layer.dataset.s})
-            `;
-            layer.style.transform = transform;
-        }
+        
+        // The individual layer transforms are now static, set only at creation.
+        // This avoids recalculating hundreds of transforms every frame.
 
         this.animationFrameId = requestAnimationFrame(this._updateLoop);
     }
