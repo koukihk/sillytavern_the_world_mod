@@ -100,23 +100,21 @@
     top: 60px;
     width: 450px;
     height: 700px;
-    background: rgba(30, 30, 35, 0.5);
-    /* Translucent dark background */
-    backdrop-filter: blur(12px) saturate(180%);
-    /* Frosted glass effect */
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    /* CSS Variables for dynamic opacity and blur */
+    --tw-panel-bg-opacity: 0.5;
+    --tw-panel-blur: 12px;
+    background: rgba(30, 30, 35, var(--tw-panel-bg-opacity));
+    backdrop-filter: blur(var(--tw-panel-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--tw-panel-blur)) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    /* Subtle border */
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    /* Soft shadow */
     border-radius: 12px;
     display: flex;
     flex-direction: column;
     z-index: 44;
     color: var(--text-main);
-    transition: width 0.3s, height 0.3s, opacity 0.2s, transform 0.2s;
+    transition: width 0.3s, height 0.3s, opacity 0.2s, transform 0.2s, backdrop-filter 0.3s, background 0.3s;
     overflow: hidden;
-    /* Ensure rounded corners clip content */
 }
 
 .tw-panel.panel-blur-on .tw-theme-layers {

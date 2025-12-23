@@ -240,6 +240,38 @@ export class UIEventManager {
                 this.state.sfxVolume = value;
                 this.audioManager.setSfxVolume(value);
                 this.$('#sfx-volume-value').text(`${Math.round(value * 100)}%`);
+            } else if (id === 'panel-opacity-slider') {
+                this.state.panelOpacity = value;
+                const opacity = value / 100;
+                $panel.css('--tw-panel-bg-opacity', opacity);
+                this.$('#panel-opacity-value').text(`${value}%`);
+            } else if (id === 'panel-blur-slider') {
+                this.state.panelBlur = value;
+                $panel.css('--tw-panel-blur', `${value}px`);
+                this.$('#panel-blur-value').text(`${value}px`);
+            }
+        });
+
+        // Bookmark Navigation - smooth scroll to category
+        $panel.on('click.tw_settings', '.tw-nav-item', (e) => {
+            e.preventDefault();
+            const targetId = this.$(e.currentTarget).data('target');
+            const $target = this.$(`#${targetId}`);
+            if ($target.length && $target[0]) {
+                const $scrollContainer = this.$('#settings-pane');
+                const container = $scrollContainer[0];
+                const target = $target[0];
+
+                // Use offsetTop relative to the scrollable container
+                const containerRect = container.getBoundingClientRect();
+                const targetRect = target.getBoundingClientRect();
+                const scrollOffset = targetRect.top - containerRect.top + container.scrollTop - 10;
+
+                $scrollContainer.animate({ scrollTop: Math.max(0, scrollOffset) }, 300);
+
+                // Update active state
+                this.$('.tw-nav-item').removeClass('active');
+                this.$(e.currentTarget).addClass('active');
             }
         });
 

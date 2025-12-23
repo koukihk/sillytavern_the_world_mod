@@ -4,6 +4,7 @@
  */
 import { HOLIDAY_DATA } from '../utils/holidays.js';
 import { Icons, getIcon } from '../utils/icons.js';
+import { getAnimatedWeatherIcon } from '../utils/animatedWeatherIcons.js';
 
 export class UIRenderer {
     constructor({ $, config, state, skyThemeController, mapSystem, logger, mapViewportManager }) {
@@ -64,16 +65,16 @@ export class UIRenderer {
         const timeString = data['时间'] || '2024年01月01日-00:00';
         const seasonStr = data['季节'] || (timeString.match(/(春|夏|秋|冬)/) || [])[0];
 
-        // Season Emoji Logic (Moved to top)
+        // Season Icon Logic (SVG instead of Emoji)
         let seasonDisplayHtml = '';
         if (seasonStr) {
-            let emoji = '📅';
-            if (seasonStr.includes('春')) emoji = '🌸';
-            else if (seasonStr.includes('夏')) emoji = '🏖️';
-            else if (seasonStr.includes('秋')) emoji = '🍁';
-            else if (seasonStr.includes('冬')) emoji = '⛄️';
+            let iconName = 'calendar';
+            if (seasonStr.includes('春')) iconName = 'flower2';
+            else if (seasonStr.includes('夏')) iconName = 'sunMedium';
+            else if (seasonStr.includes('秋')) iconName = 'leaf';
+            else if (seasonStr.includes('冬')) iconName = 'snowflake';
 
-            seasonDisplayHtml = `<span class="ws-season-emoji">${seasonStr}${emoji}</span>`;
+            seasonDisplayHtml = `<span class="ws-season-icon">${seasonStr} ${getIcon(iconName, 'ws-season-svg')}</span>`;
         }
 
         // New Time Parsing Logic
@@ -129,18 +130,8 @@ export class UIRenderer {
             timeHtml = `<div class="ws-time-secondary"><div class="ws-date-full-single" id="tw-time-display-main">${timeString}</div></div>`;
         }
 
-        // Weather Icon mapping (Simple inline logic)
-        let iconName = 'cloud';
-        if (weather.includes('晴') || weather.includes('放晴')) iconName = 'sun';
-        else if (weather.includes('雷') || weather.includes('暴雨')) iconName = 'cloudLightning';
-        else if (weather.includes('雨')) iconName = 'cloudRain';
-        else if (weather.includes('雪')) iconName = 'cloudSnow';
-        else if (weather.includes('风')) iconName = 'wind';
-        else if (weather.includes('星') || weather.includes('流星') || weather.includes('萤火')) iconName = 'sparkles';
-
-        const largeWeatherIcon = getIcon(iconName);
-
-
+        // Get animated weather icon (Meteocons)
+        const animatedWeatherIcon = getAnimatedWeatherIcon(weather, period);
 
         const contentHtml = `
             <div class="ws-details">
@@ -155,7 +146,9 @@ export class UIRenderer {
                 
                 <div class="ws-details-right">
                     <div class="ws-weather-interact" title="改变天气">
-                        <div class="ws-weather-large-icon">${largeWeatherIcon}</div>
+                        <div class="ws-weather-box">
+                            <div class="ws-weather-animated-icon">${animatedWeatherIcon}</div>
+                        </div>
                         <div class="ws-weather-text">${weather}</div>
                     </div>
                 </div>
@@ -488,7 +481,41 @@ export class UIRenderer {
             </div>
         `;
 
-        const gridContent = `
+        // 辅助函数：生成分类标题
+        const categoryTitle = (iconName, title, id) => `
+            <div class="tw-settings-category-title" id="${id}">
+                ${getIcon(iconName, 'tw-category-icon')} ${title}
+            </div>
+        `;
+
+        // 侧边书签导航 HTML - 使用分类图标
+        const bookmarkNav = `
+            <nav class="tw-settings-nav">
+                <div class="tw-nav-line"></div>
+                <a href="#cat-panel" class="tw-nav-item active" data-target="cat-panel" title="面板 UI">
+                    ${getIcon('palette', 'tw-nav-icon')}
+                </a>
+                <a href="#cat-tavern" class="tw-nav-item" data-target="cat-tavern" title="酒馆注入">
+                    ${getIcon('home', 'tw-nav-icon')}
+                </a>
+                <a href="#cat-audio" class="tw-nav-item" data-target="cat-audio" title="音效设置">
+                    ${getIcon('music', 'tw-nav-icon')}
+                </a>
+                <a href="#cat-effects" class="tw-nav-item" data-target="cat-effects" title="特效设置">
+                    ${getIcon('sparkles', 'tw-nav-icon')}
+                </a>
+                <a href="#cat-theme" class="tw-nav-item" data-target="cat-theme" title="天色主题">
+                    ${getIcon('sun', 'tw-nav-icon')}
+                </a>
+                <a href="#cat-data" class="tw-nav-item" data-target="cat-data" title="数据管理">
+                    ${getIcon('database', 'tw-nav-icon')}
+                </a>
+            </nav>
+        `;
+
+        // ==================== 分类 1: 面板 UI 设置 ====================
+        const panelUIContent = `
+            ${categoryTitle('palette', '面板 UI 设置', 'cat-panel')}
             <div class="tw-settings-grid">
                 ${createCard(
             settingTitle('mapPin', '地图模式'),
@@ -498,7 +525,6 @@ export class UIRenderer {
                         <button data-mode="advanced" class="${this.state.mapMode === 'advanced' ? 'active' : ''}">高级模式</button>
                     </div>`
         )}
-
                 ${createCard(
             settingTitle('type', '字体大小'),
             '调整世界仪表盘内所有文本的字体大小。',
@@ -511,34 +537,60 @@ export class UIRenderer {
                         </select>
                     </div>`
         )}
+                ${createCard(
+            settingTitle('layers', '面板透明度'),
+            '调整面板背景的透明程度 (0-100%)。',
+            `<div class="tw-slider-container" style="width: 100%;">
+                        <input type="range" id="panel-opacity-slider" min="0" max="100" step="5" value="${this.state.panelOpacity ?? 50}">
+                        <span id="panel-opacity-value" class="tw-slider-value">${this.state.panelOpacity ?? 50}%</span>
+                    </div>`
+        )}
+                ${createCard(
+            settingTitle('focus', '模糊程度'),
+            '调整面板背景的模糊强度 (0-20px)。',
+            `<div class="tw-slider-container" style="width: 100%;">
+                        <input type="range" id="panel-blur-slider" min="0" max="20" step="1" value="${this.state.panelBlur ?? 12}">
+                        <span id="panel-blur-value" class="tw-slider-value">${this.state.panelBlur ?? 12}px</span>
+                    </div>`
+        )}
+            </div>
+        `;
 
+        // ==================== 分类 2: 酒馆 UI 注入 ====================
+        const tavernUIContent = `
+            ${categoryTitle('home', '酒馆 UI 注入', 'cat-tavern')}
+            <div class="tw-settings-grid">
                 ${createCard(
             settingTitle('sun', '动态背景'),
             '根据游戏内时间，将动态渐变色应用为酒馆背景。',
-            `<div class="toggle-switch">
+            `<label class="tw-checkbox">
                         <input type="checkbox" id="global-theme-toggle" ${this.state.isGlobalThemeEngineEnabled ? 'checked' : ''}>
-                        <label for="global-theme-toggle"></label>
-                    </div>`
+                        <span class="tw-checkmark"></span>
+                    </label>`
         )}
-
                 ${createCard(
             settingTitle('eye', '沉浸模式'),
             '让聊天界面变为半透明的"毛玻璃"效果，透出动态背景。',
-            `<div class="toggle-switch">
+            `<label class="tw-checkbox">
                         <input type="checkbox" id="immersive-mode-toggle" ${this.state.isImmersiveModeEnabled ? 'checked' : ''} ${!this.state.isGlobalThemeEngineEnabled ? 'disabled' : ''}>
-                        <label for="immersive-mode-toggle"></label>
-                    </div>`
+                        <span class="tw-checkmark"></span>
+                    </label>`
         )}
+            </div>
+        `;
 
+        // ==================== 分类 3: 音效设置 ====================
+        const audioContent = `
+            ${categoryTitle('music', '音效设置', 'cat-audio')}
+            <div class="tw-settings-grid">
                 ${createCard(
-            settingTitle('music', '开启音频'),
+            settingTitle('volume2', '开启音频'),
             '启用或禁用所有环境音和音效。',
-            `<div class="toggle-switch">
+            `<label class="tw-checkbox">
                         <input type="checkbox" id="audio-enabled-toggle" ${this.state.isAudioEnabled ? 'checked' : ''}>
-                        <label for="audio-enabled-toggle"></label>
-                    </div>`
+                        <span class="tw-checkmark"></span>
+                    </label>`
         )}
-
                 ${createCard(
             settingTitle('volume1', '环境音音量'),
             '调整背景环境音的音量大小。',
@@ -547,7 +599,6 @@ export class UIRenderer {
                         <span id="ambient-volume-value" class="tw-slider-value">${Math.round(this.state.ambientVolume * 100)}%</span>
                     </div>`
         )}
-
                 ${createCard(
             settingTitle('zap', '音效音量'),
             '调整动作和事件音效的音量大小。',
@@ -556,103 +607,154 @@ export class UIRenderer {
                         <span id="sfx-volume-value" class="tw-slider-value">${Math.round(this.state.sfxVolume * 100)}%</span>
                     </div>`
         )}
+            </div>
+        `;
 
+        // ==================== 分类 4: 特效设置 ====================
+        const effectsContent = `
+            ${categoryTitle('sparkles', '特效设置', 'cat-effects')}
+            <div class="tw-settings-grid">
                 ${createCard(
             settingTitle('globe', '全局天气特效'),
             '让雨、雪等粒子效果在整个屏幕上显示。',
-            `<div class="toggle-switch">
+            `<label class="tw-checkbox">
                         <input type="checkbox" id="fx-global-toggle" ${this.state.isFxGlobal ? 'checked' : ''}>
-                        <label for="fx-global-toggle"></label>
-                    </div>`
+                        <span class="tw-checkmark"></span>
+                    </label>`
         )}
-
                 ${createCard(
             settingTitle('droplets', '显示雨滴特效'),
             '在雨天时，模拟雨滴落在玻璃上的视觉效果。',
-            `<div class="toggle-switch">
+            `<label class="tw-checkbox">
                         <input type="checkbox" id="raindrop-fx-toggle" ${this.state.isRaindropFxOn ? 'checked' : ''}>
-                        <label for="raindrop-fx-toggle"></label>
-                    </div>`
+                        <span class="tw-checkmark"></span>
+                    </label>`
         )}
-
                 ${createCard(
             settingTitle('cloudRain', '天气粒子特效'),
             '启用或禁用雨、雪、风等粒子效果。',
-            `<div class="toggle-switch">
+            `<label class="tw-checkbox">
                         <input type="checkbox" id="weather-fx-toggle" ${this.state.weatherFxEnabled ? 'checked' : ''}>
-                        <label for="weather-fx-toggle"></label>
-                    </div>`
+                        <span class="tw-checkmark"></span>
+                    </label>`
         )}
-
                 ${createCard(
-            settingTitle('sparkles', '高性能特效'),
+            settingTitle('cpu', '高性能特效'),
             '启用或禁用3D云、樱花、烟花等高消耗特效。',
-            `<div class="toggle-switch">
+            `<label class="tw-checkbox">
                         <input type="checkbox" id="high-performance-fx-toggle" ${this.state.isHighPerformanceFxEnabled ? 'checked' : ''}>
-                        <label for="high-performance-fx-toggle"></label>
-                    </div>`
+                        <span class="tw-checkmark"></span>
+                    </label>`
         )}
-            </div>
-            
-            <div class="tw-settings-section-title" style="margin: 20px 0 10px 5px; opacity: 0.8; font-weight: 600;">
-                ${settingTitle('palette', '天色主题')}
             </div>
         `;
-        $pane.append(gridContent);
 
+        // ==================== 分类 5: 天色主题 ====================
+        const themeTitle = `
+            ${categoryTitle('palette', '天色主题', 'cat-theme')}
+        `;
+
+        // 组合所有内容
+        const mainContent = `
+            <div class="tw-settings-container">
+                ${bookmarkNav}
+                <div class="tw-settings-content" id="tw-settings-content-inner">
+                    ${panelUIContent}
+                    ${tavernUIContent}
+                    ${audioContent}
+                    ${effectsContent}
+                    ${themeTitle}
+                </div>
+            </div>
+        `;
+        $pane.append(mainContent);
+
+        // 获取内部容器引用
+        const $contentInner = this.$('#tw-settings-content-inner');
+
+        // 天色主题列表
         const $themeList = this.$('<div class="tw-theme-list"></div>');
         if (this.skyThemeController && this.skyThemeController.availableThemes) {
             this.skyThemeController.availableThemes.forEach(theme => {
                 const isActive = this.state.activeSkyThemeId === theme.id;
+
+                // 获取主题代表性渐变色（根据主题特性选择合适时段）
+                let gradientColors = ['#38a3d1', '#90dffe']; // 默认蓝天色
+                if (theme.gradients && theme.gradients.length > 0) {
+                    let targetGradient;
+
+                    // 根据主题名称/ID选择合适的时段
+                    if (theme.id === 'legacy' || theme.name.includes('日落') || theme.name.includes('黄昏')) {
+                        // 日落主题 → 取黄昏时段 (17-18时)
+                        targetGradient = theme.gradients.find(g => g.hour >= 17 && g.hour <= 18.5);
+                    } else if (theme.id === 'eternal_night' || theme.name.includes('夜') || theme.name.includes('暗')) {
+                        // 夜晚主题 → 取午夜时段
+                        targetGradient = theme.gradients.find(g => g.hour >= 0 && g.hour <= 4);
+                    } else {
+                        // 默认主题 → 取中午时段 (11-14时)
+                        targetGradient = theme.gradients.find(g => g.hour >= 11 && g.hour <= 14);
+                    }
+
+                    // 如果没找到，取中间的渐变
+                    if (!targetGradient) {
+                        targetGradient = theme.gradients[Math.floor(theme.gradients.length / 2)];
+                    }
+
+                    if (targetGradient && targetGradient.colors) {
+                        gradientColors = targetGradient.colors;
+                    }
+                }
+                const gradientStyle = `linear-gradient(135deg, ${gradientColors[0]}, ${gradientColors[1] || gradientColors[0]})`;
+
                 const $card = this.$(`
                     <div class="tw-theme-card ${isActive ? 'active' : ''}" data-theme-id="${theme.id}">
-                        <h4>${theme.name}</h4>
-                        <p>作者: ${theme.author}</p>
-                        <div class="tw-theme-actions">
-                            <button class="tw-btn-preview has-ripple">预览</button>
-                            <button class="tw-btn-activate has-ripple">${isActive ? '当前' : '启用'}</button>
+                        <div class="tw-theme-gradient-bar" style="background: ${gradientStyle};"></div>
+                        <div class="tw-theme-card-content">
+                            <h4>${theme.name}</h4>
+                            <p>作者: ${theme.author}</p>
+                            <div class="tw-theme-actions">
+                                <button class="tw-btn-preview has-ripple">预览</button>
+                                <button class="tw-btn-activate has-ripple">${isActive ? '当前' : '启用'}</button>
+                            </div>
                         </div>
                     </div>
                 `);
                 $themeList.append($card);
             });
         }
-        $pane.append($themeList);
-        $pane.append('<hr class="ws-separator">');
+        $contentInner.append($themeList);
 
+        // 数据与管理区域
         const managementContent = this.$(`
-            <div style="margin-top: 20px;">
-                <div class="tw-settings-section-title" style="margin: 0 0 10px 5px; opacity: 0.8; font-weight: 600;">
-                    ${settingTitle('database', '数据与管理')}
-                </div>
-                
-                <div class="tw-settings-actions-grid">
-                    ${!this.mapSystem.mapDataManager.isInitialized() ? `
-                        <button id="tw-create-map-btn" class="tw-action-btn primary has-ripple">
-                            ${getIcon('folderPlus')} 创建地图档案
-                        </button>
-                    ` : `
-                        <button id="tw-reset-map-btn" class="tw-action-btn primary has-ripple">
-                            ${getIcon('save')} 初始化地图
-                        </button>
-                    `}
-                    
-                    <button id="reset-ui-btn" class="tw-action-btn has-ripple">
-                        ${getIcon('move')} 重置UI位置
-                    </button>
-                    
-                    <button id="clear-all-data-btn" class="tw-action-btn danger has-ripple" style="grid-column: span 2;">
-                        ${getIcon('trash2')} 清空所有存储
-                    </button>
-                </div>
-                
-                ${this.mapSystem.mapDataManager.isInitialized() ? `
-                    <div style="margin: 10px 5px 0 5px; font-size: 0.8em; opacity: 0.6; text-align: center;">
-                        当前地图: ${this.mapSystem.mapDataManager.bookName}
-                    </div>
-                ` : ''}
+            <div class="tw-settings-category-title" id="cat-data">
+                ${getIcon('database', 'tw-category-icon')} 数据与管理
             </div>
+            <div class="tw-settings-actions-grid">
+                ${!this.mapSystem.mapDataManager.isInitialized() ? `
+                    <button id="tw-create-map-btn" class="tw-action-btn primary has-ripple">
+                        ${getIcon('folderPlus')} 创建地图档案
+                    </button>
+                ` : `
+                    <button id="tw-reset-map-btn" class="tw-action-btn primary has-ripple">
+                        ${getIcon('save')} 初始化地图
+                    </button>
+                `}
+                
+                <button id="reset-ui-btn" class="tw-action-btn has-ripple">
+                    ${getIcon('move')} 重置UI位置
+                </button>
+                
+                <button id="clear-all-data-btn" class="tw-action-btn danger has-ripple" style="grid-column: span 2;">
+                    ${getIcon('trash2')} 清空所有存储
+                </button>
+            </div>
+            
+            ${this.mapSystem.mapDataManager.isInitialized() ? `
+                <div style="margin: 10px 5px 0 5px; font-size: 0.8em; opacity: 0.6; text-align: center;">
+                    当前地图: ${this.mapSystem.mapDataManager.bookName}
+                </div>
+            ` : ''}
         `);
-        $pane.append(managementContent);
+        $contentInner.append(managementContent);
     }
 }

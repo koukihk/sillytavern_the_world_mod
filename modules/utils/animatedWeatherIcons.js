@@ -1,0 +1,63 @@
+/**
+ * The World - Animated Weather Icons (Meteocons)
+ * @description Provides animated SVG weather icons based on Meteocons library.
+ * @license MIT (https://github.com/basmilius/weather-icons)
+ */
+
+// Inline SVG definitions for animated weather icons
+const WEATHER_ICONS = {
+    // Clear Day - Rotating sun rays
+    'clear-day': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="a-sun" x1="150" x2="234" y1="119.2" y2="264.8" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fbbf24"/><stop offset=".5" stop-color="#fbbf24"/><stop offset="1" stop-color="#f59e0b"/></linearGradient><symbol id="b-sun" viewBox="0 0 384 384"><circle cx="192" cy="192" r="84" fill="url(#a-sun)" stroke="#f8af18" stroke-miterlimit="10" stroke-width="6"/><path fill="none" stroke="#fbbf24" stroke-linecap="round" stroke-miterlimit="10" stroke-width="24" d="M192 61.7V12m0 360v-49.7m92.2-222.5 35-35M64.8 319.2l35.1-35.1m0-184.4-35-35m254.5 254.5-35.1-35.1M61.7 192H12m360 0h-49.7"><animateTransform additive="sum" attributeName="transform" dur="6s" repeatCount="indefinite" type="rotate" values="0 192 192; 45 192 192"/></path></symbol></defs><use href="#b-sun" width="384" height="384" transform="translate(64 64)"/></svg>`,
+
+    // Clear Night - Swaying moon
+    'clear-night': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="a-moon" x1="54.3" x2="187.2" y1="29" y2="259.1" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#86c3db"/><stop offset=".5" stop-color="#86c3db"/><stop offset="1" stop-color="#5eafcf"/></linearGradient><symbol id="b-moon" overflow="visible" viewBox="0 0 270 270"><path fill="url(#a-moon)" stroke="#72b9d5" stroke-linecap="round" stroke-linejoin="round" stroke-width="6" d="M252.3 168.6A133.4 133.4 0 01118 36.2 130.5 130.5 0 01122.5 3 133 133 0 003 134.6C3 207.7 63 267 137.2 267c62.5 0 114.8-42.2 129.8-99.2a135.6 135.6 0 01-14.8.8Z"><animateTransform additive="sum" attributeName="transform" dur="6s" repeatCount="indefinite" type="rotate" values="-15 135 135; 9 135 135; -15 135 135"/></path></symbol></defs><use href="#b-moon" width="270" height="270" transform="translate(121 121)"/></svg>`,
+
+    // Cloudy - Drifting cloud
+    'cloudy': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="a-cloud" x1="99.5" x2="232.6" y1="30.7" y2="261.4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".5" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient><symbol id="b-cloud" viewBox="0 0 350 222"><path fill="url(#a-cloud)" stroke="#e6effc" stroke-miterlimit="10" stroke-width="6" d="m291 107-2.5.1A83.9 83.9 0 00135.6 43 56 56 0 0051 91a56.6 56.6 0 00.8 9A60 60 0 0063 219l4-.2v.2h224a56 56 0 000-112Z"/></symbol></defs><use href="#b-cloud" width="350" height="222" transform="translate(81 145)"><animateTransform additive="sum" attributeName="transform" dur="6s" repeatCount="indefinite" type="translate" values="-18 0; 18 0; -18 0"/></use></svg>`,
+
+    // Rain - Falling raindrops
+    'rain': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="a-rain-cloud" x1="99.5" x2="232.6" y1="30.7" y2="261.4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".5" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient><linearGradient id="b-rain-drop" x1="0" x2="16" y1="0" y2="56" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0b65ed"/><stop offset=".5" stop-color="#0a5ad4"/><stop offset="1" stop-color="#0950bc"/></linearGradient><symbol id="c-rain-cloud" viewBox="0 0 350 222"><path fill="url(#a-rain-cloud)" stroke="#e6effc" stroke-miterlimit="10" stroke-width="6" d="m291 107-2.5.1A83.9 83.9 0 00135.6 43 56 56 0 0051 91a56.6 56.6 0 00.8 9A60 60 0 0063 219l4-.2v.2h224a56 56 0 000-112Z"/></symbol></defs><use href="#c-rain-cloud" width="350" height="222" transform="translate(81 145)"/><g transform="translate(200 350)"><path fill="url(#b-rain-drop)" stroke="#0a5ad4" stroke-miterlimit="10" d="M8 48a8 8 0 01-8-8V8a8 8 0 0116 0v32a8 8 0 01-8 8Z" opacity="0"><animateTransform additive="sum" attributeName="transform" dur=".67s" repeatCount="indefinite" type="translate" values="0 -60; 0 60"/><animate attributeName="opacity" dur=".67s" repeatCount="indefinite" keyTimes="0; .25; 1" values="0; 1; 0"/></path><path fill="url(#b-rain-drop)" stroke="#0a5ad4" stroke-miterlimit="10" d="M64 48a8 8 0 01-8-8V8a8 8 0 0116 0v32a8 8 0 01-8 8Z" opacity="0"><animateTransform additive="sum" attributeName="transform" begin=".33s" dur=".67s" repeatCount="indefinite" type="translate" values="0 -60; 0 60"/><animate attributeName="opacity" begin=".33s" dur=".67s" repeatCount="indefinite" keyTimes="0; .25; 1" values="0; 1; 0"/></path><path fill="url(#b-rain-drop)" stroke="#0a5ad4" stroke-miterlimit="10" d="M120 48a8 8 0 01-8-8V8a8 8 0 0116 0v32a8 8 0 01-8 8Z" opacity="0"><animateTransform additive="sum" attributeName="transform" begin=".66s" dur=".67s" repeatCount="indefinite" type="translate" values="0 -60; 0 60"/><animate attributeName="opacity" begin=".66s" dur=".67s" repeatCount="indefinite" keyTimes="0; .25; 1" values="0; 1; 0"/></path></g></svg>`,
+
+    // Thunderstorm - Flashing lightning
+    'thunderstorm': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="a-thunder-cloud" x1="99.5" x2="232.6" y1="30.7" y2="261.4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".5" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient><linearGradient id="b-thunder-bolt" x1="8.7" x2="80.9" y1="17.1" y2="142.1" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f7b23b"/><stop offset=".5" stop-color="#f7b23b"/><stop offset="1" stop-color="#f59e0b"/></linearGradient><symbol id="c-thunder-cloud" viewBox="0 0 350 222"><path fill="url(#a-thunder-cloud)" stroke="#e6effc" stroke-miterlimit="10" stroke-width="6" d="m291 107-2.5.1A83.9 83.9 0 00135.6 43 56 56 0 0051 91a56.6 56.6 0 00.8 9A60 60 0 0063 219l4-.2v.2h224a56 56 0 000-112Z"/></symbol><symbol id="d-thunder-bolt" viewBox="0 0 102.7 186.8"><path fill="url(#b-thunder-bolt)" stroke="#f6a823" stroke-miterlimit="10" stroke-width="4" d="m34.8 2-32 96h32l-16 80 80-112h-48l32-64h-48z"><animate attributeName="opacity" dur="1.33s" repeatCount="indefinite" keyTimes="0; .38; .5; .63; .75; .86; .94; 1" values="1; 1; 0; 1; 0; 1; 0; 1"/></path></symbol></defs><use href="#c-thunder-cloud" width="350" height="222" transform="translate(81 145)"/><use href="#d-thunder-bolt" width="102.7" height="186.7" transform="translate(205 291)"/></svg>`,
+
+    // Snow - Falling snowflakes
+    'snow': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="a-snow-cloud" x1="99.5" x2="232.6" y1="30.7" y2="261.4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".5" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient><linearGradient id="b-snowflake" x1="11.4" x2="32.8" y1="5.9" y2="43.1" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#86c3db"/><stop offset=".5" stop-color="#86c3db"/><stop offset="1" stop-color="#5eafcf"/></linearGradient><symbol id="c-snow-cloud" viewBox="0 0 350 222"><path fill="url(#a-snow-cloud)" stroke="#e6effc" stroke-miterlimit="10" stroke-width="6" d="m291 107-2.5.1A83.9 83.9 0 00135.6 43 56 56 0 0051 91a56.6 56.6 0 00.8 9A60 60 0 0063 219l4-.2v.2h224a56 56 0 000-112Z"/></symbol></defs><use href="#c-snow-cloud" width="350" height="222" transform="translate(81 145)"/><g transform="translate(190 345)"><circle cx="16" cy="16" r="10" fill="url(#b-snowflake)" stroke="#86c3db" stroke-width="2" opacity="0"><animateTransform additive="sum" attributeName="transform" dur="2s" repeatCount="indefinite" type="translate" values="0 -36; 0 80"/><animate attributeName="opacity" dur="2s" repeatCount="indefinite" keyTimes="0; .17; .83; 1" values="0; 1; 1; 0"/></circle><circle cx="72" cy="16" r="10" fill="url(#b-snowflake)" stroke="#86c3db" stroke-width="2" opacity="0"><animateTransform additive="sum" attributeName="transform" begin=".67s" dur="2s" repeatCount="indefinite" type="translate" values="0 -36; 0 80"/><animate attributeName="opacity" begin=".67s" dur="2s" repeatCount="indefinite" keyTimes="0; .17; .83; 1" values="0; 1; 1; 0"/></circle><circle cx="128" cy="16" r="10" fill="url(#b-snowflake)" stroke="#86c3db" stroke-width="2" opacity="0"><animateTransform additive="sum" attributeName="transform" begin="1.33s" dur="2s" repeatCount="indefinite" type="translate" values="0 -36; 0 80"/><animate attributeName="opacity" begin="1.33s" dur="2s" repeatCount="indefinite" keyTimes="0; .17; .83; 1" values="0; 1; 1; 0"/></circle></g></svg>`,
+
+    // Wind - Flowing lines
+    'wind': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="a-wind" x1="138.5" x2="224.2" y1="5.1" y2="153.5" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#d4d7dd"/><stop offset=".5" stop-color="#d4d7dd"/><stop offset="1" stop-color="#bec1c6"/></linearGradient><linearGradient id="b-wind" x1="77.7" x2="169" y1="96.2" y2="254.4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#d4d7dd"/><stop offset=".5" stop-color="#d4d7dd"/><stop offset="1" stop-color="#bec1c6"/></linearGradient><symbol id="c-wind" viewBox="0 0 348 240"><path fill="none" stroke="url(#a-wind)" stroke-dasharray="148" stroke-linecap="round" stroke-miterlimit="10" stroke-width="24" d="M267.2 24.3A40 40 0 11296 92H12"><animate attributeName="stroke-dashoffset" dur="6s" repeatCount="indefinite" values="0; 2960"/></path><path fill="none" stroke="url(#b-wind)" stroke-dasharray="110" stroke-linecap="round" stroke-miterlimit="10" stroke-width="24" d="M151.2 215.7A40 40 0 10180 148H12"><animate attributeName="stroke-dashoffset" dur="6s" repeatCount="indefinite" values="0; 1540"/></path></symbol></defs><use href="#c-wind" width="348" height="240" transform="translate(82 136)"/></svg>`,
+
+    // Partly Cloudy Day
+    'partly-cloudy-day': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="pc-cloud" x1="99.5" x2="232.6" y1="30.7" y2="261.4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".5" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient><linearGradient id="pc-sun" x1="78" x2="118" y1="63.4" y2="132.7" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fbbf24"/><stop offset=".5" stop-color="#fbbf24"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs><g transform="translate(68 109)"><g transform="translate(0 0)"><circle cx="98" cy="98" r="40" fill="url(#pc-sun)" stroke="#f8af18" stroke-miterlimit="10" stroke-width="4"/><path fill="none" stroke="#fbbf24" stroke-linecap="round" stroke-miterlimit="10" stroke-width="12" d="M98 31.4V6m0 184v-25.4M145.1 51l18-17.9M33 163l18-17.9M51 51 33 33m130.1 130.1-18-18M6 98h25.4M190 98h-25.4"><animateTransform additive="sum" attributeName="transform" dur="6s" repeatCount="indefinite" type="rotate" values="0 98 98; 45 98 98"/></path></g><g transform="translate(13 36)"><path fill="url(#pc-cloud)" stroke="#e6effc" stroke-miterlimit="10" stroke-width="6" d="m291 107-2.5.1A83.9 83.9 0 00135.6 43 56 56 0 0051 91a56.6 56.6 0 00.8 9A60 60 0 0063 219l4-.2v.2h224a56 56 0 000-112Z"/></g></g></svg>`
+};
+
+/**
+ * Get animated weather icon SVG by weather keyword
+ * @param {string} weather - Weather description (e.g., "晴", "雨", "雷")
+ * @param {string} period - Time period (e.g., "白天", "夜晚")
+ * @returns {string} - SVG HTML string
+ */
+export function getAnimatedWeatherIcon(weather, period = '白天') {
+    const isNight = period.includes('夜') || period.includes('晚') || period.includes('深夜');
+
+    // Map Chinese weather keywords to icon keys
+    if (weather.includes('雷') || weather.includes('暴雨')) {
+        return WEATHER_ICONS['thunderstorm'];
+    } else if (weather.includes('雨')) {
+        return WEATHER_ICONS['rain'];
+    } else if (weather.includes('雪')) {
+        return WEATHER_ICONS['snow'];
+    } else if (weather.includes('风')) {
+        return WEATHER_ICONS['wind'];
+    } else if (weather.includes('云') || weather.includes('阴') || weather.includes('多云')) {
+        if (isNight) {
+            return WEATHER_ICONS['cloudy'];
+        }
+        return WEATHER_ICONS['partly-cloudy-day'];
+    } else if (weather.includes('晴') || weather.includes('放晴')) {
+        return isNight ? WEATHER_ICONS['clear-night'] : WEATHER_ICONS['clear-day'];
+    }
+
+    // Default: cloudy
+    return WEATHER_ICONS['cloudy'];
+}
