@@ -18,6 +18,11 @@ export class GlobalThemeManager {
         this.activeLayer = 1;
         this.currentBackground = null;
         this.currentBrightness = null; // New: track brightness
+
+        // 插图背景状态
+        this.currentIllustrationUrl = null;
+        this.isIllustrationActive = false;
+        this.illustrationLayer = null;
     }
 
     activate() {
@@ -48,7 +53,7 @@ export class GlobalThemeManager {
         }
 
         this.logger.log('正在更新全局主题...');
-        
+
         const data = this.state.latestWorldStateData || {};
         const timeString = data['时间'] || '12:00';
         const weatherString = data['天气'] || '晴';
@@ -58,7 +63,7 @@ export class GlobalThemeManager {
         this._updateBackground(theme.background, theme.brightness);
         this._applyThemeStyles();
     }
-    
+
     _ensureBgLayers() {
         if (!this.bgLayer1 || !this.win.document.body.contains(this.bgLayer1)) {
             const $body = this.$('body');
@@ -91,17 +96,17 @@ export class GlobalThemeManager {
             this.logger.log('[Global Theme] Executing dark-to-dark fast path.');
             this.currentBackground = newBackground;
             this.currentBrightness = newBrightness;
-            
+
             // Immediately apply to both layers to prevent any flash
             this.bgLayer1.style.transition = 'none';
             this.bgLayer2.style.transition = 'none';
-            
+
             if (this.activeLayer === 1) {
                 this.bgLayer1.style.background = newBackground;
             } else {
                 this.bgLayer2.style.background = newBackground;
             }
-            
+
             // Use a timeout to re-enable transitions after the immediate paint
             setTimeout(() => {
                 if (this.bgLayer1) this.bgLayer1.style.transition = 'opacity 9s ease-in-out';
@@ -116,7 +121,7 @@ export class GlobalThemeManager {
 
         requestAnimationFrame(() => {
             if (!this.bgLayer1 || !this.bgLayer2) return; // Guard against layers being removed
-            
+
             if (this.activeLayer === 1) {
                 this.bgLayer2.style.background = newBackground;
                 this.bgLayer1.style.opacity = 0;
@@ -144,7 +149,7 @@ export class GlobalThemeManager {
                 100% { background-position: 100% 100%; }
             }
         `;
-        
+
         if (this.state.isImmersiveModeEnabled) {
             css += `
                 body { background: transparent !important; }
@@ -157,11 +162,135 @@ export class GlobalThemeManager {
                 :root { --SmartThemeBodyColor: #f0f0f0 !important; }
             `;
         } else {
-             css += `
+            css += `
                 body { background: revert !important; }
              `;
         }
-        
+
         this.injectionEngine.injectCss(this.config.GLOBAL_THEME_STYLE_ID, css);
+    }
+
+    // ==================== 插图背景功能 ====================
+
+    /**
+     * 设置插图为全局背景
+     * @param {string} imageUrl - 完整的图片 URL
+     */
+    setIllustrationBackground(imageUrl) {
+        if (!imageUrl || imageUrl === this.currentIllustrationUrl) {
+            return;
+        }
+
+        this.logger.log(`[插图背景] 正在加载: ${imageUrl}`);
+
+        // 预加载图片以检测质量和处理错误
+        const img = new Image();
+        img.onload = () => {
+            this.currentIllustrationUrl = imageUrl;
+            this.isIllustrationActive = true;
+
+            const shouldBlur = this._checkImageQuality(img);
+            this._applyIllustrationBackground(imageUrl, shouldBlur);
+
+            this.logger.success(`[插图背景] 已应用${shouldBlur ? ' (模糊)' : ''}: ${imageUrl}`);
+        };
+
+        img.onerror = () => {
+            this.logger.warn(`[插图背景] 加载失败: ${imageUrl}，回退到天色背景`);
+            this.clearIllustrationBackground();
+        };
+
+        img.src = imageUrl;
+    }
+
+    /**
+     * 清除插图背景，回退到天色渐变
+     */
+    clearIllustrationBackground() {
+        if (!this.isIllustrationActive) return;
+
+        this.currentIllustrationUrl = null;
+        this.isIllustrationActive = false;
+
+        // 淡出插图层
+        if (this.illustrationLayer) {
+            this.$(this.illustrationLayer).css('opacity', '0');
+        }
+
+        // 如果天色主题开启，恢复天色背景
+        if (this.isActive) {
+            this.updateTheme();
+        }
+
+        this.logger.log('[插图背景] 已清除，回退天色背景');
+    }
+
+    /**
+     * 应用插图背景到界面
+     */
+    _applyIllustrationBackground(imageUrl, shouldBlur) {
+        this._ensureIllustrationLayer();
+
+        const $layer = this.$(this.illustrationLayer);
+
+        // 设置背景图片
+        $layer.css({
+            'background-image': `url("${imageUrl}")`,
+            'background-size': 'cover',
+            'background-position': 'center',
+            'filter': shouldBlur ? 'blur(12px)' : 'none',
+            'transform': shouldBlur ? 'scale(1.1)' : 'none'
+        });
+
+        // 淡入效果
+        requestAnimationFrame(() => {
+            $layer.css('opacity', '1');
+        });
+    }
+
+    /**
+     * 确保插图背景层存在
+     */
+    _ensureIllustrationLayer() {
+        if (!this.illustrationLayer || !this.win.document.body.contains(this.illustrationLayer)) {
+            this._ensureBgLayers(); // 确保容器存在
+
+            const $container = this.$('.tw-global-theme-container');
+            if ($container.length) {
+                const $layer = this.$('<div>').addClass('tw-illustration-layer').css({
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0,
+                    transition: 'opacity 0.5s ease-in-out',
+                    zIndex: 1 // 在渐变层之上
+                });
+                $container.append($layer);
+                this.illustrationLayer = $layer.get(0);
+            }
+        }
+    }
+
+    /**
+     * 检查图片质量，决定是否应用模糊
+     * @returns {boolean} 是否需要模糊
+     */
+    _checkImageQuality(img) {
+        const width = img.naturalWidth;
+        const height = img.naturalHeight;
+        const aspectRatio = width / height;
+
+        // 竖屏图 (aspectRatio < 1.0) 或 小尺寸图 (width < 800) 需要模糊
+        const isPortrait = aspectRatio < 1.0;
+        const isSmall = width < 800;
+
+        if (isPortrait || isSmall) {
+            this.logger.log(`[插图背景] 图片质量检测: ${width}x${height}, AR=${aspectRatio.toFixed(2)} → 应用模糊`);
+            return true;
+        }
+
+        return false;
     }
 }

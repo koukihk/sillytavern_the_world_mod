@@ -7,7 +7,7 @@ import { Icons, getIcon } from '../utils/icons.js';
 import { getAnimatedWeatherIcon } from '../utils/animatedWeatherIcons.js';
 
 export class UIRenderer {
-    constructor({ $, config, state, skyThemeController, mapSystem, logger, mapViewportManager }) {
+    constructor({ $, config, state, skyThemeController, mapSystem, logger, mapViewportManager, globalThemeManager }) {
         this.$ = $;
         this.config = config;
         this.state = state;
@@ -15,6 +15,7 @@ export class UIRenderer {
         this.mapSystem = mapSystem; // For direct access to map data
         this.logger = logger;
         this.mapViewportManager = mapViewportManager;
+        this.globalThemeManager = globalThemeManager; // For illustration background
     }
 
     getWeatherIconHtml(weather, period) {
@@ -184,6 +185,17 @@ export class UIRenderer {
                 </div>
             </div>`;
         $pane.html(contentHtml);
+
+        // 动态插图背景处理
+        if (this.state.isDynamicIllustrationBgEnabled && this.globalThemeManager) {
+            if (data['插图']) {
+                const imageUrl = `${this.config.IMAGE_BASE_URL}${data['插图']}`;
+                this.globalThemeManager.setIllustrationBackground(imageUrl);
+            } else {
+                // 无插图时清除，回退天色
+                this.globalThemeManager.clearIllustrationBackground();
+            }
+        }
     }
 
     async renderMapPane($pane) {
@@ -576,6 +588,14 @@ export class UIRenderer {
                         <span class="tw-checkmark"></span>
                     </label>`
         )}
+                ${createCard(
+            settingTitle('image', '动态插图背景'),
+            '勾选后，场景插图将自动设为酒馆背景，无插图时回退天色。',
+            `<label class="tw-checkbox">
+                        <input type="checkbox" id="illustration-bg-toggle" ${this.state.isDynamicIllustrationBgEnabled ? 'checked' : ''}>
+                        <span class="tw-checkmark"></span>
+                    </label>`
+        )}
             </div>
         `;
 
@@ -615,8 +635,8 @@ export class UIRenderer {
             ${categoryTitle('sparkles', '特效设置', 'cat-effects')}
             <div class="tw-settings-grid">
                 ${createCard(
-            settingTitle('globe', '全局天气特效'),
-            '让雨、雪等粒子效果在整个屏幕上显示。',
+            settingTitle('globe', '全屏显示特效'),
+            '勾选后，雨、雪等粒子效果将在整个屏幕上显示。',
             `<label class="tw-checkbox">
                         <input type="checkbox" id="fx-global-toggle" ${this.state.isFxGlobal ? 'checked' : ''}>
                         <span class="tw-checkmark"></span>
@@ -631,16 +651,16 @@ export class UIRenderer {
                     </label>`
         )}
                 ${createCard(
-            settingTitle('cloudRain', '天气粒子特效'),
-            '启用或禁用雨、雪、风等粒子效果。',
+            settingTitle('cloudRain', '天气粒子动画'),
+            '勾选后显示雨滴、雪花、风等粒子动画效果。',
             `<label class="tw-checkbox">
                         <input type="checkbox" id="weather-fx-toggle" ${this.state.weatherFxEnabled ? 'checked' : ''}>
                         <span class="tw-checkmark"></span>
                     </label>`
         )}
                 ${createCard(
-            settingTitle('cpu', '高性能特效'),
-            '启用或禁用3D云、樱花、烟花等高消耗特效。',
+            settingTitle('cpu', '3D高级特效'),
+            '勾选后启用 3D 云、樱花、烟花等高消耗特效。',
             `<label class="tw-checkbox">
                         <input type="checkbox" id="high-performance-fx-toggle" ${this.state.isHighPerformanceFxEnabled ? 'checked' : ''}>
                         <span class="tw-checkmark"></span>

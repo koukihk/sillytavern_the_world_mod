@@ -190,6 +190,7 @@ export class UIEventManager {
             const keyMap = {
                 'global-theme-toggle': 'isGlobalThemeEngineEnabled',
                 'immersive-mode-toggle': 'isImmersiveModeEnabled',
+                'illustration-bg-toggle': 'isDynamicIllustrationBgEnabled',
                 'fx-global-toggle': 'isFxGlobal',
                 'raindrop-fx-toggle': 'isRaindropFxOn',
                 'weather-fx-toggle': 'weatherFxEnabled',
@@ -207,6 +208,15 @@ export class UIEventManager {
                     isEnabled ? this.globalThemeManager.activate() : this.globalThemeManager.deactivate();
                 } else if (key === 'isImmersiveModeEnabled' && this.globalThemeManager.isActive) {
                     this.globalThemeManager.updateTheme();
+                } else if (key === 'isDynamicIllustrationBgEnabled') {
+                    // 切换动态插图背景时，清除当前插图或重新应用
+                    if (!e.target.checked) {
+                        this.globalThemeManager.clearIllustrationBackground();
+                    } else if (this.state.latestWorldStateData?.['插图']) {
+                        // 如果已有插图数据，立即应用
+                        const imageUrl = `${this.config.IMAGE_BASE_URL}${this.state.latestWorldStateData['插图']}`;
+                        this.globalThemeManager.setIllustrationBackground(imageUrl);
+                    }
                 } else if (key === 'isAudioEnabled') {
                     this.audioManager.setMasterEnabled(e.target.checked);
                 } else {
