@@ -173,8 +173,8 @@ export class UIRenderer {
                         </div>
                     </div>` : ''}
 
-                    <!-- Illustration -->
-                    ${data['插图'] ? `
+                    <!-- Illustration (隐藏当动态背景激活时) -->
+                    ${(data['插图'] && !this.state.isDynamicIllustrationBgEnabled) ? `
                     <div class="ws-illustration-item">
                         <a href="${this.config.IMAGE_BASE_URL}${data['插图']}" target="_blank" rel="noopener noreferrer">
                             <img src="${this.config.IMAGE_BASE_URL}${data['插图']}" 

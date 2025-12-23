@@ -40,12 +40,13 @@ export class DataManager {
         const assignSetting = (key, defaultValue) => {
             this.state[key] = settings[key] !== undefined ? settings[key] : defaultValue;
         };
-        
+
         assignSetting('isPanelVisible', this.state.isPanelVisible);
         assignSetting('activeSkyThemeId', this.state.activeSkyThemeId);
         assignSetting('isGlobalThemeEngineEnabled', this.state.isGlobalThemeEngineEnabled);
         assignSetting('isFxGlobal', this.state.isFxGlobal);
         assignSetting('isImmersiveModeEnabled', this.state.isImmersiveModeEnabled);
+        assignSetting('isDynamicIllustrationBgEnabled', this.state.isDynamicIllustrationBgEnabled);
         assignSetting('isRaindropFxOn', this.state.isRaindropFxOn);
         assignSetting('weatherFxEnabled', this.state.weatherFxEnabled);
         assignSetting('isHighPerformanceFxEnabled', this.state.isHighPerformanceFxEnabled);
@@ -57,6 +58,8 @@ export class DataManager {
         assignSetting('panelLeft', this.state.panelLeft);
         assignSetting('hasLoadedBefore', this.state.hasLoadedBefore);
         assignSetting('fontSize', this.state.fontSize);
+        assignSetting('panelOpacity', this.state.panelOpacity);
+        assignSetting('panelBlur', this.state.panelBlur);
         assignSetting('mapMode', this.state.mapMode);
         assignSetting('isAudioEnabled', this.state.isAudioEnabled);
         assignSetting('ambientVolume', this.state.ambientVolume);
@@ -74,6 +77,7 @@ export class DataManager {
             isGlobalThemeEngineEnabled: this.state.isGlobalThemeEngineEnabled,
             isFxGlobal: this.state.isFxGlobal,
             isImmersiveModeEnabled: this.state.isImmersiveModeEnabled,
+            isDynamicIllustrationBgEnabled: this.state.isDynamicIllustrationBgEnabled,
             isRaindropFxOn: this.state.isRaindropFxOn,
             weatherFxEnabled: this.state.weatherFxEnabled,
             isHighPerformanceFxEnabled: this.state.isHighPerformanceFxEnabled,
@@ -85,6 +89,8 @@ export class DataManager {
             panelLeft: this.state.panelLeft,
             hasLoadedBefore: this.state.hasLoadedBefore,
             fontSize: this.state.fontSize,
+            panelOpacity: this.state.panelOpacity,
+            panelBlur: this.state.panelBlur,
             mapMode: this.state.mapMode,
             isAudioEnabled: this.state.isAudioEnabled,
             ambientVolume: this.state.ambientVolume,
@@ -97,7 +103,7 @@ export class DataManager {
     clearAllStorage() {
         this.logger.warn('正在清空所有本地存储数据！');
         Object.values(this.config.STORAGE_KEYS).forEach(key => this._storage('clear', key));
-        
+
         // Reset state to defaults
         this.state.latestMapData = null;
         // Do NOT reset latestWorldStateData to null, let it keep its default structure

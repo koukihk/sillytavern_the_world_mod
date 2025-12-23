@@ -14,13 +14,13 @@ export const TheWorldState = {
         "氛围": "平静",
         "光照": "正常"
     },
-    
+
     // --- UI State ---
     isPanelVisible: false,
     selectedMainLocation: null,
     selectedSubLocation: null,
     panelWidth: 450,
-    panelHeight: null, 
+    panelHeight: null,
     panelTop: 60,
     panelLeft: null,
     buttonTop: 10,
@@ -35,6 +35,7 @@ export const TheWorldState = {
     isGlobalThemeEngineEnabled: false, // New state for the global feature
     isFxGlobal: false,
     isImmersiveModeEnabled: false, // New toggle for the "glass" effect
+    isDynamicIllustrationBgEnabled: false, // Dynamic illustration background toggle
     isRaindropFxOn: false,
     weatherFxEnabled: true,
     isHighPerformanceFxEnabled: true,
@@ -43,6 +44,8 @@ export const TheWorldState = {
     isSkygazingModeActive: false,
     hasLoadedBefore: false,
     fontSize: '14px',
+    panelOpacity: 50, // Panel transparency 0-100
+    panelBlur: 12, // Panel blur 0-20px
     mapMode: 'advanced', // 'lite' or 'advanced'
 
     // --- Audio Settings ---
