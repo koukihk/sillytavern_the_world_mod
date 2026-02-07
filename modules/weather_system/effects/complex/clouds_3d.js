@@ -29,8 +29,17 @@ export class Clouds3dFX {
 
         if (this.isActive) {
             this.updateCloudColor(period, weather);
-            if (this.density.count !== (density || { count: 1.0 }).count) {
-                this.density = density || { count: 1.0 };
+            const newDensity = density || { count: 1.0 };
+            const weatherDensityChanged = this.density.count !== newDensity.count;
+            // 检测用户密度滑块和省电模式是否变化
+            const userDensityChanged = this._lastUserDensity !== this.state.particleDensity;
+            const lowPerfChanged = this._lastLowPerfMode !== this.state.isLowPerformanceMode;
+
+            if (weatherDensityChanged || userDensityChanged || lowPerfChanged) {
+                this.logger.log(`[3D Clouds] 检测到密度变化 (Weather: ${weatherDensityChanged}, User: ${userDensityChanged}, LowPerf: ${lowPerfChanged}), 重新生成云...`);
+                this.density = newDensity;
+                this._lastUserDensity = this.state.particleDensity;
+                this._lastLowPerfMode = this.state.isLowPerformanceMode;
                 this._generate(transitionDuration);
             }
             return;
@@ -39,6 +48,9 @@ export class Clouds3dFX {
         this.logger.log('[3D Clouds] Activating...');
         this.isActive = true;
         this.density = density || { count: 1.0 };
+        // 初始化密度跟踪变量
+        this._lastUserDensity = this.state.particleDensity;
+        this._lastLowPerfMode = this.state.isLowPerformanceMode;
 
         if (!$fxTarget || $fxTarget.length === 0) {
             this.logger.error('[3D Clouds] FX Target layer not found. Cannot activate.');
