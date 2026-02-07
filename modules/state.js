@@ -40,6 +40,8 @@ export const TheWorldState = {
     weatherFxEnabled: true,
     isHighPerformanceFxEnabled: true,
     isLowPerformanceMode: false, // 省电模式：大幅减少粒子数量提升性能
+    particleDensity: 100, // 粒子密度 0-100
+    isAutoPerformanceEnabled: true, // 自动性能调节
     locationFxEnabled: true,
     celestialFxEnabled: true,
     isSkygazingModeActive: false,

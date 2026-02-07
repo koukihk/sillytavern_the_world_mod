@@ -196,6 +196,7 @@ export class UIEventManager {
                 'weather-fx-toggle': 'weatherFxEnabled',
                 'high-performance-fx-toggle': 'isHighPerformanceFxEnabled',
                 'low-performance-mode-toggle': 'isLowPerformanceMode',
+                'auto-performance-toggle': 'isAutoPerformanceEnabled',
                 'audio-enabled-toggle': 'isAudioEnabled'
             };
             const key = keyMap[e.target.id];
@@ -224,6 +225,17 @@ export class UIEventManager {
                     this.panelThemeManager.applyThemeAndEffects(this.state.latestWorldStateData);
                 }
             }
+        });
+
+        // 粒子密度滑块事件
+        $panel.on('input.tw_settings', '#particle-density-slider', (e) => {
+            const value = parseInt(e.target.value, 10);
+            this.state.particleDensity = value;
+            this.$('#particle-density-value').text(`${value}%`);
+        });
+        $panel.on('change.tw_settings', '#particle-density-slider', () => {
+            this.dataManager.saveState();
+            this.panelThemeManager.applyThemeAndEffects(this.state.latestWorldStateData);
         });
 
         $panel.on('click.tw_settings', '.tw-map-mode-switch button', async (e) => {

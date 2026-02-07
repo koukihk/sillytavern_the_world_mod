@@ -24,6 +24,7 @@ import { MapSystem } from './map_system/index.js';
 import { MacroManager } from './api/MacroManager.js';
 import { CommandManager } from './api/CommandManager.js';
 import { WeatherForecaster } from './weather_system/WeatherForecaster.js';
+import { PerformanceMonitor } from './core/PerformanceMonitor.js';
 
 
 export class TheWorldApp {
@@ -33,7 +34,7 @@ export class TheWorldApp {
         this.TavernHelper = this.parentWin.TavernHelper;
         this.jQuery = this.parentWin.jQuery;
         this.SillyTavernContext = this.SillyTavern.getContext();
-        
+
         this.processorTimeout = null;
         this.previousStateSnapshot = null;
         this.dependencies = {}; // To be populated in initialize
@@ -47,7 +48,7 @@ export class TheWorldApp {
         this.logger = Logger;
         this.logger.log(`[The World v${Config.VERSION}] Initializing...`);
         this.config = Config;
-        
+
         // Create the single source of truth for time-based colors
         this.timeGradient = new TimeGradient();
 
@@ -72,28 +73,28 @@ export class TheWorldApp {
         this.dataManager = new DataManager(this.dependencies);
         this.dependencies.dataManager = this.dataManager;
         this.stateParser = new StateParser(this.dependencies);
-        
+
         const audioManager = new AudioManager(this.dependencies);
         this.audioManager = audioManager;
         this.dependencies.audioManager = audioManager;
-        
+
         this.commandParser = new CommandParser(this.dependencies);
-        
+
         // Initialize Map System
         this.mapSystem = new MapSystem(this.dependencies);
         this.dependencies.mapSystem = this.mapSystem;
         // DEFER command registration until API is ready
-        
+
         this.commandProcessor = new CommandProcessor({ audioManager, mapSystem: this.mapSystem, logger: this.logger });
-        
+
         const panelThemeManager = new PanelThemeManager(this.dependencies);
         this.panelThemeManager = panelThemeManager;
         const globalThemeManager = new GlobalThemeManager(this.dependencies);
         this.globalThemeManager = globalThemeManager;
-        
+
         this.dependencies.panelThemeManager = panelThemeManager;
         this.dependencies.globalThemeManager = globalThemeManager;
-        
+
         this.skyThemeController = new SkyThemeController({
             ...this.dependencies,
             dataManager: this.dataManager
@@ -106,7 +107,7 @@ export class TheWorldApp {
 
         this.dataManager.loadState();
         await this.skyThemeController.init();
-        
+
         // Initialize UI Controller earlier
         this.uiController = new UIController({
             ...this.dependencies,
@@ -133,7 +134,7 @@ export class TheWorldApp {
         this.macroManager.registerAll();
 
         // DEFERRED: CommandManager is now initialized in finalizeApiInitialization
-        
+
         if (TheWorldState.isGlobalThemeEngineEnabled) {
             this.logger.log("全局主题引擎在启动时已启用，正在激活...");
             this.globalThemeManager.activate();
@@ -143,19 +144,28 @@ export class TheWorldApp {
             this.uiController.panelManager.togglePanel(true);
         }
 
+        // Initialize and start performance monitor
+        this.performanceMonitor = new PerformanceMonitor({
+            state: TheWorldState,
+            logger: this.logger,
+            dataManager: this.dataManager
+        });
+        this.dependencies.performanceMonitor = this.performanceMonitor;
+        this.performanceMonitor.checkAndStart();
+
         this.setupEventListeners();
-        
+
         const unlockHandler = () => {
             this.audioManager.unlockAudio();
         };
         this.parentWin.document.addEventListener('click', unlockHandler, { once: true, capture: true });
         this.parentWin.document.addEventListener('keydown', unlockHandler, { once: true, capture: true });
 
-        
+
         this.parentWin.tw_debug = {
             triggerEffect: (effectName) => this.panelThemeManager.weatherSystem.triggerEffect(effectName)
         };
-        
+
         const bookName = await this.mapSystem.lorebookManager.findBoundWorldbookName();
         if (bookName) {
             await this.mapSystem.initializeData(bookName);
@@ -168,7 +178,7 @@ export class TheWorldApp {
             await this.recalculateAndSnapshot(lastId);
         }
         // The 'else' block is now redundant because the initial render is already done.
-        
+
         this.logger.success(`[The World v${Config.VERSION}] Initialization complete.`);
     }
 
@@ -178,10 +188,10 @@ export class TheWorldApp {
      */
     finalizeApiInitialization() {
         this.logger.log('[API] EXTRAS_CONNECTED event received. Finalizing API-dependent initialization...');
-        
+
         // Now it's safe to initialize these modules
         this.mapSystem.registerCommands();
-        
+
         this.commandManager = new CommandManager(this.dependencies);
         this.commandManager.registerAll();
     }
@@ -203,12 +213,12 @@ export class TheWorldApp {
                 worldState: this.jQuery.extend(true, {}, TheWorldState.latestWorldStateData),
                 map: this.jQuery.extend(true, {}, TheWorldState.latestMapData)
             };
-            
+
             await this.processSingleMessage(msgId);
 
         }, 350);
     }
-    
+
     async processSingleMessage(msgId) {
         try {
             const messages = this.TavernHelper.getChatMessages(msgId, { "role": "all", "hide_state": "all", "include_swipes": false });
@@ -218,7 +228,7 @@ export class TheWorldApp {
 
             // Handle non-persistent ambient sound logic BEFORE processing new commands
             this.audioManager.processMessage(msg);
-            
+
             // Execute audio and other FX commands
             const commands = this.commandParser.parse(msg);
             if (commands.length > 0) {
@@ -226,7 +236,7 @@ export class TheWorldApp {
             }
 
             const sanitizedMes = msg.replace(/<thinking>[\s\S]*?<\/thinking>|<think>[\s\S]*?<\/think>/g, '');
-            
+
             let updated = false;
 
             // --- CORRECTED <MapUpdate> Handling ---
@@ -242,7 +252,7 @@ export class TheWorldApp {
                             this.logger.log('No map worldbook found, creating one on-demand...');
                             bookName = await this.mapSystem.lorebookManager.createAndBindMapWorldbook();
                         }
-                        
+
                         if (bookName) {
                             await this.mapSystem.mapDataManager.initialize(bookName);
                         } else {
@@ -260,7 +270,7 @@ export class TheWorldApp {
                     this.logger.error('Failed to parse or process <MapUpdate> tag:', error);
                 }
             }
-            
+
             const worldStateMatch = sanitizedMes.match(this.config.WORLD_STATE_TAG_REGEX);
             if (worldStateMatch) {
                 const newWorldStateData = this.stateParser.parseWorldState(worldStateMatch[1]);
@@ -272,9 +282,9 @@ export class TheWorldApp {
 
                 // NEW: Implicit Location Update Logic
                 const newLocationName = newWorldStateData['地点'];
-                const hasExplicitMoveCommand = commands.some(cmd => 
-                    cmd.module === 'Map' && 
-                    cmd.function === 'SetProperty' && 
+                const hasExplicitMoveCommand = commands.some(cmd =>
+                    cmd.module === 'Map' &&
+                    cmd.function === 'SetProperty' &&
                     cmd.args[0] === 'player_location'
                 );
 
@@ -293,7 +303,7 @@ export class TheWorldApp {
                 this.logger.log(`[Processor] WorldState from message ${msgId} processed. Updating UI.`);
                 if (this.globalThemeManager.isActive) this.globalThemeManager.updateTheme();
             }
-            
+
             if (this.uiController) {
                 await this.uiController.updateAllPanes();
             }
@@ -305,7 +315,7 @@ export class TheWorldApp {
 
     async recalculateAndSnapshot(lastId) {
         this.logger.log('[Recalculator] Performing initial state calculation and snapshot...');
-        
+
         TheWorldState.latestMapData = {};
         TheWorldState.latestWorldStateData = {};
 
@@ -314,28 +324,28 @@ export class TheWorldApp {
             : this.TavernHelper.getChatMessages(0, { "role": "all", "hide_state": "all", "include_swipes": false });
 
         if (!allMessages) {
-             this.logger.error('[Recalculator] Could not retrieve messages for recalculation.');
-             return;
+            this.logger.error('[Recalculator] Could not retrieve messages for recalculation.');
+            return;
         }
 
         for (let i = 0; i < allMessages.length - 1; i++) {
             const message = allMessages[i];
             if (message.is_user) continue;
-            
+
             const msg = message.message.replace(/<thinking>[\s\S]*?<\/thinking>|<think>[\s\S]*?<\/think>/g, '');
             // NOTE: <MapUpdate> is not processed during recalculation to avoid re-processing persistent data.
             // Recalculation is primarily for transient state like WorldState.
-            
+
             const worldStateMatch = msg.match(this.config.WORLD_STATE_TAG_REGEX);
             if (worldStateMatch) Object.assign(TheWorldState.latestWorldStateData, this.stateParser.parseWorldState(worldStateMatch[1]));
         }
-        
+
         this.logger.log('Taking initial snapshot...');
         this.previousStateSnapshot = {
             worldState: this.jQuery.extend(true, {}, TheWorldState.latestWorldStateData),
             map: this.jQuery.extend(true, {}, TheWorldState.latestMapData)
         };
-        
+
         await this.processSingleMessage(lastId);
         if (this.globalThemeManager.isActive) this.globalThemeManager.updateTheme();
         this.logger.success('[Recalculator] Initial state calculated and ready.');
@@ -348,9 +358,9 @@ export class TheWorldApp {
         eventSource.once(eventTypes.EXTRAS_CONNECTED, () => this.finalizeApiInitialization());
 
         eventSource.on(eventTypes.MESSAGE_RECEIVED, (id) => this.debouncedProcessor(id, false));
-        eventSource.on(eventTypes.MESSAGE_EDITED, (id) => this.debouncedProcessor(id, true)); 
-        eventSource.on(eventTypes.MESSAGE_SWIPED, (id) => this.debouncedProcessor(id, true)); 
-        
+        eventSource.on(eventTypes.MESSAGE_EDITED, (id) => this.debouncedProcessor(id, true));
+        eventSource.on(eventTypes.MESSAGE_SWIPED, (id) => this.debouncedProcessor(id, true));
+
         eventSource.on(eventTypes.MESSAGE_DELETED, async (id) => {
             this.logger.log(`Message (ID: ${id}) deleted. Checking for map rollbacks.`);
             const transactions = TheWorldState.lorebookTransactionHistory[id];
@@ -368,29 +378,29 @@ export class TheWorldApp {
 
             const lastMessageId = await this.TavernHelper.getLastMessageId();
             if (id === lastMessageId + 1 && this.previousStateSnapshot) {
-                 this.logger.log(`Last message (ID: ${id}) deleted. Rolling back to previous state snapshot.`);
-                 TheWorldState.latestWorldStateData = this.jQuery.extend(true, {}, this.previousStateSnapshot.worldState);
-                 this.previousStateSnapshot = null;
-                 
-                 this.dataManager.saveState();
-                 if (this.globalThemeManager.isActive) this.globalThemeManager.updateTheme();
-                 if (this.uiController) {
+                this.logger.log(`Last message (ID: ${id}) deleted. Rolling back to previous state snapshot.`);
+                TheWorldState.latestWorldStateData = this.jQuery.extend(true, {}, this.previousStateSnapshot.worldState);
+                this.previousStateSnapshot = null;
+
+                this.dataManager.saveState();
+                if (this.globalThemeManager.isActive) this.globalThemeManager.updateTheme();
+                if (this.uiController) {
                     await this.uiController.updateAllPanes();
-                 }
+                }
             } else {
-                 this.logger.log(`A historical message (ID: ${id}) was deleted. Triggering full recalculation.`);
-                 const currentLastId = await this.TavernHelper.getLastMessageId();
-                 if (currentLastId >= 0) {
-                     await this.recalculateAndSnapshot(currentLastId);
-                 } else {
-                     TheWorldState.latestWorldStateData = {};
-                     this.previousStateSnapshot = null;
-                     this.dataManager.saveState();
-                     if (this.globalThemeManager.isActive) this.globalThemeManager.updateTheme();
-                     if (this.uiController) {
+                this.logger.log(`A historical message (ID: ${id}) was deleted. Triggering full recalculation.`);
+                const currentLastId = await this.TavernHelper.getLastMessageId();
+                if (currentLastId >= 0) {
+                    await this.recalculateAndSnapshot(currentLastId);
+                } else {
+                    TheWorldState.latestWorldStateData = {};
+                    this.previousStateSnapshot = null;
+                    this.dataManager.saveState();
+                    if (this.globalThemeManager.isActive) this.globalThemeManager.updateTheme();
+                    if (this.uiController) {
                         await this.uiController.updateAllPanes();
-                     }
-                 }
+                    }
+                }
             }
         });
 

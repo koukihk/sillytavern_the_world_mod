@@ -7,6 +7,7 @@ import { RainyDay } from './effects/rainydrops.js';
 import { Clouds3dFX } from './effects/complex/clouds_3d.js';
 import { VaporTrailFX } from './effects/vapor_trail.js';
 import { FireworksFX } from './effects/fireworks.js';
+import { HolidayDetector } from '../core/HolidayDetector.js';
 
 export class WeatherSystem {
     constructor({ $, state, config, logger, injectionEngine, timeGradient }) {
@@ -31,6 +32,7 @@ export class WeatherSystem {
             particleClass: ''
         };
         this.milkyWayTimeout = null;
+        this.holidayDetector = new HolidayDetector();
     }
 
 
@@ -114,19 +116,22 @@ export class WeatherSystem {
         let newEffect = { type: null, variant: null, density: 0, targetCount: 0, particleClass: null, creator: null, interval: 0 };
         if (this.state.weatherFxEnabled) {
             if (isRaining) {
-                const rainCount = this.state.isLowPerformanceMode ? 15 : 50;
+                const baseCount = this.state.isLowPerformanceMode ? 15 : 50;
+                const rainCount = Math.round(baseCount * (this.state.particleDensity / 100));
                 newEffect = {
                     type: 'rain', variant: isWindy ? 'windy' : 'normal', density: density.count, particleClass: 'particle-wrapper', targetCount: rainCount * density.count, interval: 150 / density.speed,
                     creator: () => { const p = this.$('<div class="raindrop"></div>').css('opacity', Math.random() * .6 + .2); if (isWindy) p.addClass(density.wind >= 1.5 ? 'slanted-strong' : 'slanted-light'); const w = this._createParticleWrapper(density, 'rain').append(p); $fgFxTarget.append(w); }
                 };
             } else if (isSnowing) {
-                const snowCount = this.state.isLowPerformanceMode ? 12 : 40;
+                const baseCount = this.state.isLowPerformanceMode ? 12 : 40;
+                const snowCount = Math.round(baseCount * (this.state.particleDensity / 100));
                 newEffect = {
                     type: 'snow', variant: isWindy ? 'windy' : 'normal', density: density.count, particleClass: 'particle-wrapper', targetCount: snowCount * density.count, interval: 200 / density.speed,
                     creator: () => { const size = `${2 + Math.random() * 3}px`; const p = this.$('<div class="snowflake"></div>').css({ width: size, height: size, opacity: 0.5 + Math.random() * 0.5 }); const w = this._createParticleWrapper(density, 'snow').append(p); if (isWindy) w.find('.snowflake').css('animation-name', 'fall-sway'); $fgFxTarget.append(w); }
                 };
             } else if (isWindy && !isCloudy && !shouldShowSakura) { // MODIFIED: Do not show wind effect if sakura is active
-                const leafCount = this.state.isLowPerformanceMode ? 5 : 15;
+                const baseCount = this.state.isLowPerformanceMode ? 5 : 15;
+                const leafCount = Math.round(baseCount * (this.state.particleDensity / 100));
                 newEffect = {
                     type: 'wind', variant: 'normal', density: density.count, particleClass: 'leaf', targetCount: leafCount * density.count, interval: 300 / density.speed,
                     creator: () => { let p = (safeSeasonString.includes('春')) ? ['🍃', '🌸'] : (safeSeasonString.includes('秋')) ? ['🍂', '🍁'] : ['🍃']; const h = p[Math.floor(Math.random() * p.length)]; const l = this.$('<div></div>').addClass('leaf').html(h).css({ fontSize: `${12 + Math.random() * 8}px`, animationDuration: `${(10 + Math.random() * 8) / density.speed}s`, animationDelay: `-${Math.random() * 10}s`, left: `${Math.random() * 100}%`, animationName: this.state.isFxGlobal ? 'fall-sway-rotate-global' : 'fall-sway-rotate-local' }); $fgFxTarget.append(l); }
@@ -137,6 +142,8 @@ export class WeatherSystem {
         const fireflyCount = this.state.isLowPerformanceMode ? 6 : 20;
         this._manageStaticEffect('firefly', hasFireflies, fireflyCount * density.count, () => { const size = `${2 + Math.random() * 2}px`; return this.$('<div>').addClass('firefly').css({ width: size, height: size, left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDuration: `${4 + Math.random() * 4}s`, animationDelay: `${Math.random() * 8}s` }); }, $fgFxTarget);
 
+        // --- 节日彩蛋特效 ---
+        this._renderHolidayEffect($fgFxTarget);
 
         // --- New Sakura Logic ---
         if (this.state.isHighPerformanceFxEnabled && shouldShowSakura) {
@@ -588,5 +595,50 @@ export class WeatherSystem {
         layers.forEach($layer => {
             if ($layer.length) $layer.children().not('.tw-fx-glow, .sakura-canvas').remove();
         });
+    }
+
+    /**
+     * 节日彩蛋特效渲染
+     * @param {jQuery} $fxTarget - 特效容器
+     */
+    _renderHolidayEffect($fxTarget) {
+        const holidayConfig = this.holidayDetector.getParticleConfig();
+        if (!holidayConfig) return;
+
+        const className = 'holiday-particle';
+        const existing = $fxTarget.children(`.${className}`);
+
+        // 如果已有节日粒子且是同一节日，不重复生成
+        if (existing.length > 0 && existing.data('holiday-id') === holidayConfig.id) return;
+
+        // 清除旧的节日粒子
+        existing.remove();
+
+        // 根据性能模式决定粒子数量
+        const baseCount = this.state.isLowPerformanceMode ? 8 : 25;
+        const count = Math.round(baseCount * (this.state.particleDensity / 100));
+
+        this.logger.log(`[天气系统] 检测到节日: ${holidayConfig.name}，生成 ${count} 个粒子`);
+
+        for (let i = 0; i < count; i++) {
+            const emoji = holidayConfig.particles[Math.floor(Math.random() * holidayConfig.particles.length)];
+            const $particle = this.$('<div>')
+                .addClass(className)
+                .data('holiday-id', holidayConfig.id)
+                .html(emoji)
+                .css({
+                    position: 'absolute',
+                    fontSize: `${16 + Math.random() * 12}px`,
+                    left: `${Math.random() * 100}%`,
+                    top: `-20px`,
+                    opacity: 0.8 + Math.random() * 0.2,
+                    animation: `fall-sway-rotate-local ${8 + Math.random() * 6}s linear infinite`,
+                    animationDelay: `-${Math.random() * 10}s`,
+                    zIndex: 100,
+                    pointerEvents: 'none',
+                    filter: `drop-shadow(0 0 3px ${holidayConfig.colors[Math.floor(Math.random() * holidayConfig.colors.length)]})`
+                });
+            $fxTarget.append($particle);
+        }
     }
 }

@@ -674,6 +674,20 @@ export class UIRenderer {
                         <span class="tw-checkmark"></span>
                     </label>`
         )}
+                ${createCard(
+            settingTitle('sliders', '粒子密度'),
+            `<span id="particle-density-value">${this.state.particleDensity}%</span>`,
+            `<input type="range" class="tw-range-slider" id="particle-density-slider" 
+                        min="10" max="100" step="5" value="${this.state.particleDensity}">`
+        )}
+                ${createCard(
+            settingTitle('activity', '自动性能调节'),
+            '检测到掉帧时自动降低粒子密度。',
+            `<label class="tw-checkbox">
+                        <input type="checkbox" id="auto-performance-toggle" ${this.state.isAutoPerformanceEnabled ? 'checked' : ''}>
+                        <span class="tw-checkmark"></span>
+                    </label>`
+        )}
             </div>
         `;
 
