@@ -620,7 +620,7 @@ export class UIRenderer {
                     </div>`
         )}
                 ${createCard(
-            settingTitle('zap', '音效音量'),
+            settingTitle('volume2', '音效音量'),
             '调整动作和事件音效的音量大小。',
             `<div class="tw-slider-container" style="width: 100%;">
                         <input type="range" id="sfx-volume-slider" min="0" max="1" step="0.05" value="${this.state.sfxVolume}">
@@ -675,13 +675,13 @@ export class UIRenderer {
                     </label>`
         )}
                 ${createCard(
-            settingTitle('sliders', '粒子密度'),
+            settingTitle('wind', '粒子密度'),
             `<span id="particle-density-value">${this.state.particleDensity}%</span>`,
             `<input type="range" class="tw-range-slider" id="particle-density-slider" 
                         min="10" max="100" step="5" value="${this.state.particleDensity}">`
         )}
                 ${createCard(
-            settingTitle('activity', '自动性能调节'),
+            settingTitle('cpu', '自动性能调节'),
             '检测到掉帧时自动降低粒子密度。',
             `<label class="tw-checkbox">
                         <input type="checkbox" id="auto-performance-toggle" ${this.state.isAutoPerformanceEnabled ? 'checked' : ''}>
@@ -689,7 +689,7 @@ export class UIRenderer {
                     </label>`
         )}
                 ${createCard(
-            settingTitle('zap-off', '雷电效果'),
+            settingTitle('zap', '雷电效果'),
             '关闭后下雨打雷时不显示闪电效果。',
             `<label class="tw-checkbox">
                         <input type="checkbox" id="lightning-toggle" ${this.state.isLightningEnabled ? 'checked' : ''}>
