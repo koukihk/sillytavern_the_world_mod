@@ -134,10 +134,10 @@ export class Clouds3dFX {
 
     _generate(transitionDuration = '7s') {
         this.layers = [];
-        // 淡出效果：先隐藏，清空后淡入
-        const $world = this.$(this.world);
-        $world.css({ opacity: 0, transition: 'opacity 1.5s ease-in-out' });
-        $world.empty();
+        // 淡入淡出效果
+        // const $world = this.$(this.world);
+        // $world.css({ opacity: 0, transition: 'opacity 1.5s ease-in-out' });
+        this.$(this.world).empty();
 
         // PERFORMANCE OPTIMIZATION: Reduced the base number of cloud clusters
         // 省电模式下减少云团数量
@@ -153,9 +153,9 @@ export class Clouds3dFX {
         }
 
         // 淡入效果
-        requestAnimationFrame(() => {
-            $world.css('opacity', 1);
-        });
+        // requestAnimationFrame(() => {
+        //     $world.css('opacity', 1);
+        // });
     }
 
     _createCloud(transitionDuration) {

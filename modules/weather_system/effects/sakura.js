@@ -365,7 +365,8 @@ export const SakuraFX = {
         }
         this.pointFlower.particles.sort((p0, p1) => p0.zkey - p1.zkey);
         let ipos = 0, ieuler = this.pointFlower.numFlowers * 3, imisc = this.pointFlower.numFlowers * 6;
-        for (let i = 0; i < this.pointFlower.numFlowers; i++) {
+        // 修复：只渲染已激活的粒子，避免未初始化粒子显示异常
+        for (let i = 0; i < activeCount; i++) {
             let prtcl = this.pointFlower.particles[i];
             this.pointFlower.dataArray[ipos++] = prtcl.position[0]; this.pointFlower.dataArray[ipos++] = prtcl.position[1]; this.pointFlower.dataArray[ipos++] = prtcl.position[2];
             this.pointFlower.dataArray[ieuler++] = prtcl.euler[0]; this.pointFlower.dataArray[ieuler++] = prtcl.euler[1]; this.pointFlower.dataArray[ieuler++] = prtcl.euler[2];
