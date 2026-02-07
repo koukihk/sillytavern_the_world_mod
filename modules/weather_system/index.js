@@ -152,7 +152,11 @@ export class WeatherSystem {
                 this.logger.log('[天气系统] 首次激活樱花特效 (密集模式)...');
                 const $canvas = this.$('<canvas>').addClass('sakura-canvas');
                 $fgFxTarget.append($canvas);
-                SakuraFX.init($canvas.get(0), { density: 'dense', isLowPerformanceMode: this.state.isLowPerformanceMode });
+                SakuraFX.init($canvas.get(0), {
+                    density: 'dense',
+                    isLowPerformanceMode: this.state.isLowPerformanceMode,
+                    densityMultiplier: this.state.particleDensity / 100
+                });
                 this.sakuraInstance = SakuraFX;
             }
             // If it was already sakura, do nothing, let the instance manage its state.

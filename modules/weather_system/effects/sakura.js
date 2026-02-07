@@ -171,6 +171,7 @@ export const SakuraFX = {
 
         this.densityMode = options.density || 'dense';
         this.isLowPerformanceMode = options.isLowPerformanceMode || false;
+        this.densityMultiplier = (typeof options.densityMultiplier === 'number') ? options.densityMultiplier : 1.0;
         this.canvas = canvas;
         try {
             // Clean up any previous GL context to prevent errors on re-init
@@ -377,16 +378,24 @@ export const SakuraFX = {
         this.pointFlower.program = this.createShader(this.shaders.sakura_point_vsh, this.shaders.sakura_point_fsh, ['uProjection', 'uModelview', 'uResolution', 'uOffset', 'uDOF', 'uFade'], ['aPosition', 'aEuler', 'aMisc']);
         this.pointFlower.offset = new Float32Array([0, 0, 0]); this.pointFlower.fader = Vector3.create(0.0, 10.0, 0.0);
 
+        // 基础数量计算
+        let baseFlowers = 0;
+
         if (this.densityMode === 'dense') {
-            // 省电模式下减少花瓣数量
-            this.pointFlower.numFlowers = this.isLowPerformanceMode ? 250 : 500;
-            this.pointFlower.activationRate = this.isLowPerformanceMode ? 25 : 50; // Faster activation for burst
+            baseFlowers = 500;
+            this.pointFlower.activationRate = this.isLowPerformanceMode ? 25 : 50;
             this.renderPasses = this.isLowPerformanceMode ? 3 : 5;
         } else { // sparse
-            this.pointFlower.numFlowers = this.isLowPerformanceMode ? 40 : 80;
+            baseFlowers = 80;
             this.pointFlower.activationRate = this.isLowPerformanceMode ? 5 : 10;
             this.renderPasses = 1;
         }
+
+        // 应用省电模式和粒子密度乘数
+        let multiplier = this.isLowPerformanceMode ? 0.5 : 1.0;
+        multiplier *= this.densityMultiplier;
+
+        this.pointFlower.numFlowers = Math.max(10, Math.round(baseFlowers * multiplier));
 
         this.pointFlower.particles = new Array(this.pointFlower.numFlowers);
         this.pointFlower.dataArray = new Float32Array(this.pointFlower.numFlowers * (3 + 3 + 2)); this.pointFlower.buffer = this.gl.createBuffer();

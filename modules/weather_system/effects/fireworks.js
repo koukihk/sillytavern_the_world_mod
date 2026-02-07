@@ -255,7 +255,12 @@ export class FireworksFX {
         this.particles.push(new ExplosionGlow(x, y, hue));
 
         // 省电模式下粒子数量减半
-        const particleMultiplier = this.isLowPerformanceMode ? 0.5 : 1.0;
+        let particleMultiplier = this.isLowPerformanceMode ? 0.5 : 1.0;
+        // 粒子密度滑块影响
+        if (this.state && typeof this.state.particleDensity === 'number') {
+            particleMultiplier *= (this.state.particleDensity / 100);
+        }
+
         const typeRoll = Math.random();
 
         // 20% chance: Small burst

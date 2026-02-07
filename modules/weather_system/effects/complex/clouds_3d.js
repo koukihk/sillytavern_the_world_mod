@@ -123,9 +123,13 @@ export class Clouds3dFX {
         this.$(this.world).empty();
         // PERFORMANCE OPTIMIZATION: Reduced the base number of cloud clusters
         // 省电模式下减少云团数量
+        // 省电模式下减少云团数量
         const baseCount = this.state.isLowPerformanceMode ? 6 : 12;
-        const cloudCount = Math.min(60, Math.floor(baseCount * this.density.count));
-        this.logger.log(`[3D Clouds] Generating ${cloudCount} cloud clusters based on density ${this.density.count}${this.state.isLowPerformanceMode ? ' (低性能模式)' : ''}`);
+        // 粒子密度滑块影响
+        const densityFactor = (this.state && typeof this.state.particleDensity === 'number') ? (this.state.particleDensity / 100) : 1.0;
+
+        const cloudCount = Math.min(60, Math.floor(baseCount * this.density.count * densityFactor));
+        this.logger.log(`[3D Clouds] Generating ${cloudCount} cloud clusters based on density ${this.density.count} (Factor: ${densityFactor.toFixed(2)})${this.state.isLowPerformanceMode ? ' (低性能模式)' : ''}`);
 
         for (let j = 0; j < cloudCount; j++) {
             this._createCloud(transitionDuration);
