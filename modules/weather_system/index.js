@@ -152,7 +152,7 @@ export class WeatherSystem {
                 this.logger.log('[天气系统] 首次激活樱花特效 (密集模式)...');
                 const $canvas = this.$('<canvas>').addClass('sakura-canvas');
                 $fgFxTarget.append($canvas);
-                SakuraFX.init($canvas.get(0), { density: 'dense' });
+                SakuraFX.init($canvas.get(0), { density: 'dense', isLowPerformanceMode: this.state.isLowPerformanceMode });
                 this.sakuraInstance = SakuraFX;
             }
             // If it was already sakura, do nothing, let the instance manage its state.
@@ -166,7 +166,7 @@ export class WeatherSystem {
 
         if (this.state.isHighPerformanceFxEnabled && shouldShowFireworks && !this.fireworksInstance) {
             this.logger.log('[天气系统] 正在激活烟花特效...');
-            this.fireworksInstance = new FireworksFX({ ...this.dependencies, $fxTarget: $fgFxTarget });
+            this.fireworksInstance = new FireworksFX({ ...this.dependencies, $fxTarget: $fgFxTarget, state: this.state });
             this.fireworksInstance.init();
         } else if ((!shouldShowFireworks || !this.state.isHighPerformanceFxEnabled) && this.fireworksInstance) {
             this.logger.log('[天气系统] 正在停止烟花特效...');

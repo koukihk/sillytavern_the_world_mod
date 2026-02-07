@@ -4,16 +4,16 @@
  */
 
 const Vector3 = {
-    create: (x, y, z) => ({'x':x, 'y':y, 'z':z}),
+    create: (x, y, z) => ({ 'x': x, 'y': y, 'z': z }),
     dot: (v0, v1) => v0.x * v1.x + v0.y * v1.y + v0.z * v1.z,
     cross: (v, v0, v1) => { v.x = v0.y * v1.z - v0.z * v1.y; v.y = v0.z * v1.x - v0.x * v1.z; v.z = v0.x * v1.y - v0.y * v1.x; },
-    normalize: (v) => { let l = v.x * v.x + v.y * v.y + v.z * v.z; if(l > 0.00001) { l = 1.0 / Math.sqrt(l); v.x *= l; v.y *= l; v.z *= l; } },
-    arrayForm: (v) => { if(!v.array) v.array = new Float32Array(3); v.array[0] = v.x; v.array[1] = v.y; v.array[2] = v.z; return v.array; }
+    normalize: (v) => { let l = v.x * v.x + v.y * v.y + v.z * v.z; if (l > 0.00001) { l = 1.0 / Math.sqrt(l); v.x *= l; v.y *= l; v.z *= l; } },
+    arrayForm: (v) => { if (!v.array) v.array = new Float32Array(3); v.array[0] = v.x; v.array[1] = v.y; v.array[2] = v.z; return v.array; }
 };
 
 const Matrix44 = {
-    createIdentity: () => new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]),
-    loadProjection: function(m, aspect, vdeg, near, far) {
+    createIdentity: () => new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
+    loadProjection: function (m, aspect, vdeg, near, far) {
         let h = near * Math.tan(vdeg * Math.PI / 180.0 * 0.5) * 2.0;
         let w = h * aspect;
         m[0] = 2.0 * near / w; m[1] = 0; m[2] = 0; m[3] = 0;
@@ -21,10 +21,10 @@ const Matrix44 = {
         m[8] = 0; m[9] = 0; m[10] = -(far + near) / (far - near); m[11] = -1.0;
         m[12] = 0; m[13] = 0; m[14] = -2.0 * far * near / (far - near); m[15] = 0;
     },
-    loadLookAt: function(m, vpos, vlook, vup) {
+    loadLookAt: function (m, vpos, vlook, vup) {
         let frontv = Vector3.create(vpos.x - vlook.x, vpos.y - vlook.y, vpos.z - vlook.z); Vector3.normalize(frontv);
-        let sidev = Vector3.create(1,0,0); Vector3.cross(sidev, vup, frontv); Vector3.normalize(sidev);
-        let topv = Vector3.create(1,0,0); Vector3.cross(topv, frontv, sidev);
+        let sidev = Vector3.create(1, 0, 0); Vector3.cross(sidev, vup, frontv); Vector3.normalize(sidev);
+        let topv = Vector3.create(1, 0, 0); Vector3.cross(topv, frontv, sidev);
         m[0] = sidev.x; m[1] = topv.x; m[2] = frontv.x; m[3] = 0;
         m[4] = sidev.y; m[5] = topv.y; m[6] = frontv.y; m[7] = 0;
         m[8] = sidev.z; m[9] = topv.z; m[10] = frontv.z; m[11] = 0;
@@ -56,11 +56,12 @@ export const SakuraFX = {
     targetRenderPasses: 1,
     renderPasses: 5,
 
-    renderSpec: { 'width': 0, 'height': 0, 'aspect': 1, 'array': new Float32Array(3), 'halfWidth': 0, 'halfHeight': 0, 'halfArray': new Float32Array(3), 'pointSize': { 'min': 0, 'max': 0 },
-        'setSize': function(w, h) { this.width = w; this.height = h; this.aspect = this.width / this.height; this.array[0] = this.width; this.array[1] = this.height; this.array[2] = this.aspect; this.halfWidth = Math.floor(w / 2); this.halfHeight = Math.floor(h / 2); this.halfArray[0] = this.halfWidth; this.halfArray[1] = this.halfHeight; this.halfArray[2] = this.halfWidth / this.halfHeight; }
+    renderSpec: {
+        'width': 0, 'height': 0, 'aspect': 1, 'array': new Float32Array(3), 'halfWidth': 0, 'halfHeight': 0, 'halfArray': new Float32Array(3), 'pointSize': { 'min': 0, 'max': 0 },
+        'setSize': function (w, h) { this.width = w; this.height = h; this.aspect = this.width / this.height; this.array[0] = this.width; this.array[1] = this.height; this.array[2] = this.aspect; this.halfWidth = Math.floor(w / 2); this.halfHeight = Math.floor(h / 2); this.halfArray[0] = this.halfWidth; this.halfArray[1] = this.halfHeight; this.halfArray[2] = this.halfWidth / this.halfHeight; }
     },
     projection: { 'angle': 60, 'nearfar': new Float32Array([0.1, 100.0]), 'matrix': null },
-    camera: { 'position': {x: 0, y: 0, z: 100}, 'lookat': {x: 0, y: 0, z: 0}, 'up': {x: 0, y: 1, z: 0}, 'dof': {x: 10.0, y: 4.0, z: 8.0}, 'matrix': null },
+    camera: { 'position': { x: 0, y: 0, z: 100 }, 'lookat': { x: 0, y: 0, z: 0 }, 'up': { x: 0, y: 1, z: 0 }, 'dof': { x: 10.0, y: 4.0, z: 8.0 }, 'matrix': null },
     pointFlower: {}, effectLib: {},
     shaders: {
         sakura_point_vsh: `
@@ -162,13 +163,14 @@ export const SakuraFX = {
                 gl_FragColor = col / 5.0;
             }`,
     },
-    
-    init: function(canvas, options = {}) {
+
+    init: function (canvas, options = {}) {
         if (!canvas) return;
         // Reset state for re-initialization
         if (this.animating) this.stop();
 
         this.densityMode = options.density || 'dense';
+        this.isLowPerformanceMode = options.isLowPerformanceMode || false;
         this.canvas = canvas;
         try {
             // Clean up any previous GL context to prevent errors on re-init
@@ -201,7 +203,7 @@ export const SakuraFX = {
         }, 50);
     },
 
-    stop: function() {
+    stop: function () {
         this.animating = false;
         clearTimeout(this.transitionTimeout);
         this.transitionTimeout = null;
@@ -223,7 +225,7 @@ export const SakuraFX = {
             try {
                 const loseContext = this.gl.getExtension('WEBGL_lose_context');
                 if (loseContext) loseContext.loseContext();
-            } catch (e) {}
+            } catch (e) { }
         }
         if (this.canvas) {
             this.canvas.remove();
@@ -234,7 +236,7 @@ export const SakuraFX = {
         this.isTransitioning = false;
     },
 
-    animate: function() {
+    animate: function () {
         if (!this.animating) return;
         let curdate = new Date();
         this.timeInfo.elapsed = (curdate - this.timeInfo.start) / 1000.0;
@@ -267,16 +269,16 @@ export const SakuraFX = {
         this.animationFrameId = requestAnimationFrame(this.animate.bind(this));
     },
 
-    transitionToSparse: function() {
+    transitionToSparse: function () {
         if (this.isTransitioning || this.densityMode === 'sparse') return;
-        
+
         this.isTransitioning = true;
         this.transitionStartTime = performance.now();
         this.initialParticles = this.activeParticles;
         this.initialRenderPasses = this.renderPasses;
     },
 
-    onResize: function() {
+    onResize: function () {
         if (!this.canvas || !this.gl) return;
         const parent = this.canvas.parentElement;
         if (parent) {
@@ -291,7 +293,7 @@ export const SakuraFX = {
         if (this.sceneStandBy) this.initScene();
     },
 
-    setViewports: function() {
+    setViewports: function () {
         if (this.gl.canvas.width === 0 || this.gl.canvas.height === 0) return;
         this.renderSpec.setSize(this.gl.canvas.width, this.gl.canvas.height);
         this.gl.viewport(0, 0, this.renderSpec.width, this.renderSpec.height);
@@ -305,14 +307,14 @@ export const SakuraFX = {
         rtfunc('wHalfRT1', this.renderSpec.halfWidth, this.renderSpec.halfHeight);
     },
 
-    createScene: function() { this.createEffectLib(); this.createPointFlowers(); this.sceneStandBy = true; },
-    initScene: function() {
+    createScene: function () { this.createEffectLib(); this.createPointFlowers(); this.sceneStandBy = true; },
+    initScene: function () {
         this.initPointFlowers();
         this.camera.position.z = this.pointFlower.area.z + this.projection.nearfar[0];
         this.projection.angle = Math.atan2(this.pointFlower.area.y, this.camera.position.z + this.pointFlower.area.z) * 180.0 / Math.PI * 2.0;
         Matrix44.loadProjection(this.projection.matrix, this.renderSpec.aspect, this.projection.angle, this.projection.nearfar[0], this.projection.nearfar[1]);
     },
-    renderScene: function() {
+    renderScene: function () {
         if (this.gl.canvas.width === 0 || this.gl.canvas.height === 0) return;
         Matrix44.loadLookAt(this.camera.matrix, this.camera.position, this.camera.lookat, this.camera.up);
         const gl = this.gl;
@@ -323,19 +325,19 @@ export const SakuraFX = {
         this.renderPointFlowers();
         this.renderPostProcess();
     },
-    renderPointFlowers: function() {
+    renderPointFlowers: function () {
         const gl = this.gl; const PI2 = Math.PI * 2.0; const limit = [this.pointFlower.area.x, this.pointFlower.area.y, this.pointFlower.area.z]; const symmetryrand = () => Math.random() * 2.0 - 1.0; const activeCount = Math.floor(this.activeParticles);
-        for(let i = 0; i < activeCount; i++) {
+        for (let i = 0; i < activeCount; i++) {
             let prtcl = this.pointFlower.particles[i]; prtcl.update(this.timeInfo.delta, this.timeInfo.elapsed);
-            if(Math.abs(prtcl.position[0]) - prtcl.size * 0.5 > limit[0]) { prtcl.position[0] > 0 ? prtcl.position[0] -= limit[0] * 2.0 : prtcl.position[0] += limit[0] * 2.0; }
-            if(prtcl.position[1] < -limit[1]) { prtcl.position[1] = limit[1] + Math.random() * 5.0; prtcl.position[0] = symmetryrand() * limit[0]; }
-            if(Math.abs(prtcl.position[2]) - prtcl.size * 0.5 > limit[2]) { prtcl.position[2] > 0 ? prtcl.position[2] -= limit[2] * 2.0 : prtcl.position[2] += limit[2] * 2.0; }
+            if (Math.abs(prtcl.position[0]) - prtcl.size * 0.5 > limit[0]) { prtcl.position[0] > 0 ? prtcl.position[0] -= limit[0] * 2.0 : prtcl.position[0] += limit[0] * 2.0; }
+            if (prtcl.position[1] < -limit[1]) { prtcl.position[1] = limit[1] + Math.random() * 5.0; prtcl.position[0] = symmetryrand() * limit[0]; }
+            if (Math.abs(prtcl.position[2]) - prtcl.size * 0.5 > limit[2]) { prtcl.position[2] > 0 ? prtcl.position[2] -= limit[2] * 2.0 : prtcl.position[2] += limit[2] * 2.0; }
             prtcl.euler[0] = (prtcl.euler[0] % PI2 + PI2) % PI2; prtcl.euler[1] = (prtcl.euler[1] % PI2 + PI2) % PI2; prtcl.euler[2] = (prtcl.euler[2] % PI2 + PI2) % PI2;
             prtcl.zkey = (this.camera.matrix[2] * prtcl.position[0] + this.camera.matrix[6] * prtcl.position[1] + this.camera.matrix[10] * prtcl.position[2] + this.camera.matrix[14]);
         }
         this.pointFlower.particles.sort((p0, p1) => p0.zkey - p1.zkey);
         let ipos = 0, ieuler = this.pointFlower.numFlowers * 3, imisc = this.pointFlower.numFlowers * 6;
-        for(let i = 0; i < this.pointFlower.numFlowers; i++) {
+        for (let i = 0; i < this.pointFlower.numFlowers; i++) {
             let prtcl = this.pointFlower.particles[i];
             this.pointFlower.dataArray[ipos++] = prtcl.position[0]; this.pointFlower.dataArray[ipos++] = prtcl.position[1]; this.pointFlower.dataArray[ipos++] = prtcl.position[2];
             this.pointFlower.dataArray[ieuler++] = prtcl.euler[0]; this.pointFlower.dataArray[ieuler++] = prtcl.euler[1]; this.pointFlower.dataArray[ieuler++] = prtcl.euler[2];
@@ -348,7 +350,7 @@ export const SakuraFX = {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.pointFlower.buffer); gl.bufferData(gl.ARRAY_BUFFER, this.pointFlower.dataArray, gl.DYNAMIC_DRAW);
         gl.vertexAttribPointer(prog.attributes.aPosition, 3, gl.FLOAT, false, 0, 0); gl.vertexAttribPointer(prog.attributes.aEuler, 3, gl.FLOAT, false, 0, this.pointFlower.numFlowers * 3 * 4); gl.vertexAttribPointer(prog.attributes.aMisc, 2, gl.FLOAT, false, 0, this.pointFlower.numFlowers * 6 * 4);
         const zpos = -2.0;
-        const offsets = [[0,0,0], [-1,-1,zpos], [-1,1,zpos], [1,-1,zpos], [1,1,zpos]];
+        const offsets = [[0, 0, 0], [-1, -1, zpos], [-1, 1, zpos], [1, -1, zpos], [1, 1, zpos]];
         for (let i = 0; i < this.renderPasses; i++) {
             this.pointFlower.offset[0] = this.pointFlower.area.x * offsets[i][0];
             this.pointFlower.offset[1] = this.pointFlower.area.y * offsets[i][1];
@@ -358,11 +360,11 @@ export const SakuraFX = {
         }
         gl.bindBuffer(gl.ARRAY_BUFFER, null); this.unuseShader(prog); gl.disable(gl.BLEND);
     },
-    renderPostProcess: function() {
+    renderPostProcess: function () {
         const gl = this.gl; gl.disable(gl.DEPTH_TEST);
-        const bindRT = (rt, isclear) => { gl.bindFramebuffer(gl.FRAMEBUFFER, rt.frameBuffer); gl.viewport(0, 0, rt.width, rt.height); if(isclear) { gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); } };
+        const bindRT = (rt, isclear) => { gl.bindFramebuffer(gl.FRAMEBUFFER, rt.frameBuffer); gl.viewport(0, 0, rt.width, rt.height); if (isclear) { gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); } };
         bindRT(this.renderSpec.wHalfRT0, true); this.useEffect(this.effectLib.mkBrightBuf, this.renderSpec.mainRT); this.drawEffect(this.effectLib.mkBrightBuf);
-        for(let i = 0; i < 2; i++) {
+        for (let i = 0; i < 2; i++) {
             let p = 1.5 + i, s = 2.0 + i;
             bindRT(this.renderSpec.wHalfRT1, true); this.useEffect(this.effectLib.dirBlur, this.renderSpec.wHalfRT0); gl.uniform4f(this.effectLib.dirBlur.program.uniforms.uBlurDir, p, 0.0, s, 0.0); this.drawEffect(this.effectLib.dirBlur);
             bindRT(this.renderSpec.wHalfRT0, true); this.useEffect(this.effectLib.dirBlur, this.renderSpec.wHalfRT1); gl.uniform4f(this.effectLib.dirBlur.program.uniforms.uBlurDir, 0.0, p, 0.0, s); this.drawEffect(this.effectLib.dirBlur);
@@ -370,76 +372,77 @@ export const SakuraFX = {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, this.renderSpec.width, this.renderSpec.height); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         this.useEffect(this.effectLib.finalComp, this.renderSpec.mainRT); gl.uniform1i(this.effectLib.finalComp.program.uniforms.uBloom, 1); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.renderSpec.wHalfRT0.texture); this.drawEffect(this.effectLib.finalComp); gl.enable(gl.DEPTH_TEST);
     },
-    createPointFlowers: function() {
+    createPointFlowers: function () {
         this.renderSpec.pointSize = this.gl.getParameter(this.gl.ALIASED_POINT_SIZE_RANGE);
         this.pointFlower.program = this.createShader(this.shaders.sakura_point_vsh, this.shaders.sakura_point_fsh, ['uProjection', 'uModelview', 'uResolution', 'uOffset', 'uDOF', 'uFade'], ['aPosition', 'aEuler', 'aMisc']);
         this.pointFlower.offset = new Float32Array([0, 0, 0]); this.pointFlower.fader = Vector3.create(0.0, 10.0, 0.0);
 
         if (this.densityMode === 'dense') {
-            this.pointFlower.numFlowers = 500;
-            this.pointFlower.activationRate = 50; // Faster activation for burst
-            this.renderPasses = 5;
+            // 省电模式下减少花瓣数量
+            this.pointFlower.numFlowers = this.isLowPerformanceMode ? 250 : 500;
+            this.pointFlower.activationRate = this.isLowPerformanceMode ? 25 : 50; // Faster activation for burst
+            this.renderPasses = this.isLowPerformanceMode ? 3 : 5;
         } else { // sparse
-            this.pointFlower.numFlowers = 80;
-            this.pointFlower.activationRate = 10;
+            this.pointFlower.numFlowers = this.isLowPerformanceMode ? 40 : 80;
+            this.pointFlower.activationRate = this.isLowPerformanceMode ? 5 : 10;
             this.renderPasses = 1;
         }
 
         this.pointFlower.particles = new Array(this.pointFlower.numFlowers);
         this.pointFlower.dataArray = new Float32Array(this.pointFlower.numFlowers * (3 + 3 + 2)); this.pointFlower.buffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.pointFlower.buffer); this.gl.bufferData(this.gl.ARRAY_BUFFER, this.pointFlower.dataArray, this.gl.DYNAMIC_DRAW); this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null); this.unuseShader(this.pointFlower.program);
-        const BlossomParticle = function(){ this.velocity=[0,0,0]; this.rotation=[0,0,0]; this.position=[0,0,0]; this.euler=[0,0,0]; this.size=1.0; };
-        BlossomParticle.prototype.update = function(dt, et){ this.position[0]+=this.velocity[0]*dt; this.position[1]+=this.velocity[1]*dt; this.position[2]+=this.velocity[2]*dt; this.euler[0]+=this.rotation[0]*dt; this.euler[1]+=this.rotation[1]*dt; this.euler[2]+=this.rotation[2]*dt; };
-        for(let i = 0; i < this.pointFlower.numFlowers; i++) this.pointFlower.particles[i] = new BlossomParticle();
+        const BlossomParticle = function () { this.velocity = [0, 0, 0]; this.rotation = [0, 0, 0]; this.position = [0, 0, 0]; this.euler = [0, 0, 0]; this.size = 1.0; };
+        BlossomParticle.prototype.update = function (dt, et) { this.position[0] += this.velocity[0] * dt; this.position[1] += this.velocity[1] * dt; this.position[2] += this.velocity[2] * dt; this.euler[0] += this.rotation[0] * dt; this.euler[1] += this.rotation[1] * dt; this.euler[2] += this.rotation[2] * dt; };
+        for (let i = 0; i < this.pointFlower.numFlowers; i++) this.pointFlower.particles[i] = new BlossomParticle();
     },
-    initPointFlowers: function() {
+    initPointFlowers: function () {
         this.pointFlower.area = Vector3.create(20.0, 20.0, 20.0); this.pointFlower.area.x = this.pointFlower.area.y * this.renderSpec.aspect;
         this.pointFlower.fader.x = 10.0; this.pointFlower.fader.y = this.pointFlower.area.z; this.pointFlower.fader.z = 0.1;
         const PI2 = Math.PI * 2.0, symmetryrand = () => Math.random() * 2.0 - 1.0; const windStrength = 1.5;
-        for(let i = 0; i < this.pointFlower.numFlowers; i++) {
+        for (let i = 0; i < this.pointFlower.numFlowers; i++) {
             let p = this.pointFlower.particles[i]; let vy = -(Math.random() * 1.0 + 0.5); let vx = (symmetryrand() * 0.7) + windStrength; let vz = symmetryrand() * 0.5;
-            let v = Vector3.create(vx, vy, vz); Vector3.normalize(v); let s = 1.5 + Math.random(); p.velocity = [v.x*s, v.y*s, v.z*s];
-            const rotationSpeedFactor = 1.5; p.rotation = [symmetryrand()*PI2*0.5*rotationSpeedFactor, symmetryrand()*PI2*0.5*rotationSpeedFactor, symmetryrand()*PI2*0.5*rotationSpeedFactor];
-            p.position = [symmetryrand()*this.pointFlower.area.x, symmetryrand()*this.pointFlower.area.y, symmetryrand()*this.pointFlower.area.z]; p.euler = [Math.random()*PI2, Math.random()*PI2, Math.random()*PI2];
+            let v = Vector3.create(vx, vy, vz); Vector3.normalize(v); let s = 1.5 + Math.random(); p.velocity = [v.x * s, v.y * s, v.z * s];
+            const rotationSpeedFactor = 1.5; p.rotation = [symmetryrand() * PI2 * 0.5 * rotationSpeedFactor, symmetryrand() * PI2 * 0.5 * rotationSpeedFactor, symmetryrand() * PI2 * 0.5 * rotationSpeedFactor];
+            p.position = [symmetryrand() * this.pointFlower.area.x, symmetryrand() * this.pointFlower.area.y, symmetryrand() * this.pointFlower.area.z]; p.euler = [Math.random() * PI2, Math.random() * PI2, Math.random() * PI2];
             p.size = 0.9 + Math.random() * 0.1;
         }
     },
-    createEffectLib: function() {
+    createEffectLib: function () {
         const cmnvtxsrc = this.shaders.fx_common_vsh;
         this.effectLib.mkBrightBuf = this.createEffectProgram(cmnvtxsrc, this.shaders.fx_brightbuf_fsh); this.effectLib.dirBlur = this.createEffectProgram(cmnvtxsrc, this.shaders.fx_dirblur_r4_fsh, ['uBlurDir']); this.effectLib.finalComp = this.createEffectProgram(cmnvtxsrc, this.shaders.pp_final_fsh, ['uBloom']);
     },
-    createEffectProgram: function(vtxsrc, frgsrc, exunifs, exattrs) {
-        let ret = {}; let unifs = ['uResolution', 'uSrc', 'uDelta']; if(exunifs) unifs = unifs.concat(exunifs); let attrs = ['aPosition']; if(exattrs) attrs = attrs.concat(exattrs);
+    createEffectProgram: function (vtxsrc, frgsrc, exunifs, exattrs) {
+        let ret = {}; let unifs = ['uResolution', 'uSrc', 'uDelta']; if (exunifs) unifs = unifs.concat(exunifs); let attrs = ['aPosition']; if (exattrs) attrs = attrs.concat(exattrs);
         ret.program = this.createShader(vtxsrc, frgsrc, unifs, attrs); if (!ret.program) return null;
-        this.useShader(ret.program); ret.dataArray = new Float32Array([-1,-1, 1,-1, -1,1, 1,1]); ret.buffer = this.gl.createBuffer();
+        this.useShader(ret.program); ret.dataArray = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]); ret.buffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, ret.buffer); this.gl.bufferData(this.gl.ARRAY_BUFFER, ret.dataArray, this.gl.STATIC_DRAW); this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null); this.unuseShader(ret.program); return ret;
     },
-    useEffect: function(fxobj, srctex) {
+    useEffect: function (fxobj, srctex) {
         if (!fxobj || !fxobj.program) return; const prog = fxobj.program; this.useShader(prog); this.gl.uniform3fv(prog.uniforms.uResolution, this.renderSpec.array);
-        if(srctex != null) { this.gl.uniform2fv(prog.uniforms.uDelta, srctex.dtxArray); this.gl.uniform1i(prog.uniforms.uSrc, 0); this.gl.activeTexture(this.gl.TEXTURE0); this.gl.bindTexture(this.gl.TEXTURE_2D, srctex.texture); }
+        if (srctex != null) { this.gl.uniform2fv(prog.uniforms.uDelta, srctex.dtxArray); this.gl.uniform1i(prog.uniforms.uSrc, 0); this.gl.activeTexture(this.gl.TEXTURE0); this.gl.bindTexture(this.gl.TEXTURE_2D, srctex.texture); }
     },
-    drawEffect: function(fxobj) { if (!fxobj || !fxobj.program) return; this.gl.bindBuffer(this.gl.ARRAY_BUFFER, fxobj.buffer); this.gl.vertexAttribPointer(fxobj.program.attributes.aPosition, 2, this.gl.FLOAT, false, 0, 0); this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4); },
-    createRenderTarget: function(w, h) {
-        const gl = this.gl; let ret = { 'width':w, 'height':h, 'dtxArray':new Float32Array([1/w, 1/h]) }; ret.frameBuffer = gl.createFramebuffer(); ret.renderBuffer = gl.createRenderbuffer(); ret.texture = gl.createTexture();
+    drawEffect: function (fxobj) { if (!fxobj || !fxobj.program) return; this.gl.bindBuffer(this.gl.ARRAY_BUFFER, fxobj.buffer); this.gl.vertexAttribPointer(fxobj.program.attributes.aPosition, 2, this.gl.FLOAT, false, 0, 0); this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4); },
+    createRenderTarget: function (w, h) {
+        const gl = this.gl; let ret = { 'width': w, 'height': h, 'dtxArray': new Float32Array([1 / w, 1 / h]) }; ret.frameBuffer = gl.createFramebuffer(); ret.renderBuffer = gl.createRenderbuffer(); ret.texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, ret.texture); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.bindFramebuffer(gl.FRAMEBUFFER, ret.frameBuffer); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, ret.texture, 0); gl.bindRenderbuffer(gl.RENDERBUFFER, ret.renderBuffer); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, ret.renderBuffer);
         gl.bindTexture(gl.TEXTURE_2D, null); gl.bindRenderbuffer(gl.RENDERBUFFER, null); gl.bindFramebuffer(gl.FRAMEBUFFER, null); return ret;
     },
-    deleteRenderTarget: function(rt) { if (!rt || !this.gl) return; this.gl.deleteFramebuffer(rt.frameBuffer); this.gl.deleteRenderbuffer(rt.renderBuffer); this.gl.deleteTexture(rt.texture); },
-    createShader: function(vtxsrc, frgsrc, uniformlist, attrlist) {
-        const vsh = this.compileShader(this.gl.VERTEX_SHADER, vtxsrc); const fsh = this.compileShader(this.gl.FRAGMENT_SHADER, frgsrc); if(!vsh || !fsh) return null;
+    deleteRenderTarget: function (rt) { if (!rt || !this.gl) return; this.gl.deleteFramebuffer(rt.frameBuffer); this.gl.deleteRenderbuffer(rt.renderBuffer); this.gl.deleteTexture(rt.texture); },
+    createShader: function (vtxsrc, frgsrc, uniformlist, attrlist) {
+        const vsh = this.compileShader(this.gl.VERTEX_SHADER, vtxsrc); const fsh = this.compileShader(this.gl.FRAGMENT_SHADER, frgsrc); if (!vsh || !fsh) return null;
         const prog = this.gl.createProgram(); this.gl.attachShader(prog, vsh); this.gl.attachShader(prog, fsh); this.gl.deleteShader(vsh); this.gl.deleteShader(fsh); this.gl.linkProgram(prog);
         if (!this.gl.getProgramParameter(prog, this.gl.LINK_STATUS)) { this.gl.deleteProgram(prog); return null; }
-        if(uniformlist) { prog.uniforms = {}; uniformlist.forEach(u => { prog.uniforms[u] = this.gl.getUniformLocation(prog, u); }); }
-        if(attrlist) { prog.attributes = {}; attrlist.forEach(a => { prog.attributes[a] = this.gl.getAttribLocation(prog, a); }); }
+        if (uniformlist) { prog.uniforms = {}; uniformlist.forEach(u => { prog.uniforms[u] = this.gl.getUniformLocation(prog, u); }); }
+        if (attrlist) { prog.attributes = {}; attrlist.forEach(a => { prog.attributes[a] = this.gl.getAttribLocation(prog, a); }); }
         return prog;
     },
-    compileShader: function(shtype, shsrc) {
+    compileShader: function (shtype, shsrc) {
         if (shsrc === undefined) { return null; }
         const retsh = this.gl.createShader(shtype); this.gl.shaderSource(retsh, shsrc); this.gl.compileShader(retsh);
         if (!this.gl.getShaderParameter(retsh, this.gl.COMPILE_STATUS)) { this.gl.deleteShader(retsh); return null; }
         return retsh;
     },
-    useShader: function(prog) { if (!prog) return; this.gl.useProgram(prog); if (!prog.attributes) return; for(let attr in prog.attributes) { this.gl.enableVertexAttribArray(prog.attributes[attr]); } },
-    unuseShader: function(prog) { if (!prog) return; if (!prog.attributes) return; for(let attr in prog.attributes) { this.gl.disableVertexAttribArray(prog.attributes[attr]); } this.gl.useProgram(null); }
+    useShader: function (prog) { if (!prog) return; this.gl.useProgram(prog); if (!prog.attributes) return; for (let attr in prog.attributes) { this.gl.enableVertexAttribArray(prog.attributes[attr]); } },
+    unuseShader: function (prog) { if (!prog) return; if (!prog.attributes) return; for (let attr in prog.attributes) { this.gl.disableVertexAttribArray(prog.attributes[attr]); } this.gl.useProgram(null); }
 };
