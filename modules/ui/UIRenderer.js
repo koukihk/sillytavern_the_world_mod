@@ -688,6 +688,14 @@ export class UIRenderer {
                         <span class="tw-checkmark"></span>
                     </label>`
         )}
+                ${createCard(
+            settingTitle('zap-off', '雷电效果'),
+            '关闭后下雨打雷时不显示闪电效果。',
+            `<label class="tw-checkbox">
+                        <input type="checkbox" id="lightning-toggle" ${this.state.isLightningEnabled ? 'checked' : ''}>
+                        <span class="tw-checkmark"></span>
+                    </label>`
+        )}
             </div>
         `;
 

@@ -197,6 +197,7 @@ export class UIEventManager {
                 'high-performance-fx-toggle': 'isHighPerformanceFxEnabled',
                 'low-performance-mode-toggle': 'isLowPerformanceMode',
                 'auto-performance-toggle': 'isAutoPerformanceEnabled',
+                'lightning-toggle': 'isLightningEnabled',
                 'audio-enabled-toggle': 'isAudioEnabled'
             };
             const key = keyMap[e.target.id];

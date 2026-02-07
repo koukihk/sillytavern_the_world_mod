@@ -185,7 +185,7 @@ export class WeatherSystem {
         clearTimeout(this.globalLightningLoopTimeout); this.globalLightningLoopTimeout = null;
 
         $fgFxTarget.find('.effect-thunder').remove();
-        if (this.state.weatherFxEnabled && safeWeatherString.includes('雷')) {
+        if (this.state.weatherFxEnabled && this.state.isLightningEnabled && safeWeatherString.includes('雷')) {
             this.logger.log('[天气系统] 正在激活雷电效果。');
             this.clouds3dInstance.triggerLightning();
             this.startThunderstormEffect($toggleBtn);
