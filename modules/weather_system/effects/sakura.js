@@ -288,9 +288,10 @@ export const SakuraFX = {
     setDensityFactor: function (factor, isLowPerf) {
         if (!this.animating || !this.pointFlower) return;
 
-        // 计算新的目标粒子数量
+        // 使用原始最大粒子数计算新目标（避免 transitionToSparse 导致的上限问题）
+        const baseNum = this._originalNumFlowers || this.pointFlower.numFlowers;
         const lowPerfMultiplier = isLowPerf ? 0.5 : 1.0;
-        const newTarget = Math.max(10, Math.floor(this.pointFlower.numFlowers * factor * lowPerfMultiplier));
+        const newTarget = Math.max(10, Math.floor(baseNum * factor * lowPerfMultiplier));
 
         // 如果目标没有显著变化，跳过
         if (Math.abs(newTarget - this.targetParticles) < 5) return;
@@ -301,7 +302,7 @@ export const SakuraFX = {
         this.initialParticles = this.activeParticles;
         this.targetParticles = newTarget;
         // 调整过渡时长：变化越大，过渡越久
-        const changeRatio = Math.abs(newTarget - this.activeParticles) / this.pointFlower.numFlowers;
+        const changeRatio = Math.abs(newTarget - this.activeParticles) / baseNum;
         this.transitionDuration = Math.max(500, Math.min(3000, changeRatio * 5000));
     },
 
@@ -422,6 +423,8 @@ export const SakuraFX = {
         multiplier *= this.densityMultiplier;
 
         this.pointFlower.numFlowers = Math.max(10, Math.round(baseFlowers * multiplier));
+        // 保存原始最大粒子数，供 setDensityFactor 使用
+        this._originalNumFlowers = this.pointFlower.numFlowers;
 
         this.pointFlower.particles = new Array(this.pointFlower.numFlowers);
         this.pointFlower.dataArray = new Float32Array(this.pointFlower.numFlowers * (3 + 3 + 2)); this.pointFlower.buffer = this.gl.createBuffer();

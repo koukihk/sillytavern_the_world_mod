@@ -136,7 +136,7 @@ export class Clouds3dFX {
         this.layers = [];
         // 淡出效果：先隐藏，清空后淡入
         const $world = this.$(this.world);
-        $world.css({ opacity: 0, transition: 'opacity 0.5s ease-in-out' });
+        $world.css({ opacity: 0, transition: 'opacity 1.5s ease-in-out' });
         $world.empty();
 
         // PERFORMANCE OPTIMIZATION: Reduced the base number of cloud clusters
