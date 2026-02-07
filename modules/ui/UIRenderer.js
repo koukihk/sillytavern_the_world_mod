@@ -532,9 +532,9 @@ export class UIRenderer {
                 ${createCard(
             settingTitle('mapPin', '地图模式'),
             '在简洁的列表视图和高级的画布视图之间切换。',
-            `<div class="tw-map-mode-switch">
-                        <button data-mode="lite" class="${this.state.mapMode === 'lite' ? 'active' : ''}">轻量模式</button>
-                        <button data-mode="advanced" class="${this.state.mapMode === 'advanced' ? 'active' : ''}">高级模式</button>
+            `<div class="tw-map-mode-switch" style="display: flex; gap: 5px; width: 100%;">
+                        <button data-mode="lite" class="${this.state.mapMode === 'lite' ? 'active' : ''}" style="flex: 1; white-space: nowrap; min-width: 0; padding: 5px 2px;">列表</button>
+                        <button data-mode="advanced" class="${this.state.mapMode === 'advanced' ? 'active' : ''}" style="flex: 1; white-space: nowrap; min-width: 0; padding: 5px 2px;">地图</button>
                     </div>`
         )}
                 ${createCard(
