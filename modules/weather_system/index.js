@@ -602,7 +602,9 @@ export class WeatherSystem {
      * @param {jQuery} $fxTarget - 特效容器
      */
     _renderHolidayEffect($fxTarget) {
-        const holidayConfig = this.holidayDetector.getParticleConfig();
+        // 使用游戏内时间而非系统时间
+        const gameTimeString = this.state.latestWorldStateData?.['时间'] || '';
+        const holidayConfig = this.holidayDetector.getParticleConfig(gameTimeString);
         if (!holidayConfig) return;
 
         const className = 'holiday-particle';
