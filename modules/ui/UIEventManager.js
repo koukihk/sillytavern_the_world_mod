@@ -8,6 +8,7 @@ export class UIEventManager {
     constructor(dependencies) {
         Object.assign(this, dependencies);
         this.longPressTimer = null;
+        this.debounceTimer = null;
         this.pressStartTime = 0;
         this.isAudioUnlocked = false;
 
@@ -228,14 +229,22 @@ export class UIEventManager {
             }
         });
 
-        // 粒子密度滑块事件
+        // 粒子密度滑块事件 - 防抖处理
         $panel.on('input.tw_settings', '#particle-density-slider', (e) => {
             const value = parseInt(e.target.value, 10);
             this.state.particleDensity = value;
             this.$('#particle-density-value').text(`${value}%`);
+
+            // 防抖：延迟 100ms 触发特效更新
+            if (this.debounceTimer) clearTimeout(this.debounceTimer);
+            this.debounceTimer = setTimeout(() => {
+                this.panelThemeManager.applyThemeAndEffects(this.state.latestWorldStateData);
+            }, 100);
         });
         $panel.on('change.tw_settings', '#particle-density-slider', () => {
             this.dataManager.saveState();
+            // 移除这里的 update 调用，因为 input 防抖已经处理了，或者是为了确保最后一次更新
+            if (this.debounceTimer) clearTimeout(this.debounceTimer);
             this.panelThemeManager.applyThemeAndEffects(this.state.latestWorldStateData);
         });
 

@@ -148,7 +148,8 @@ export class TheWorldApp {
         this.performanceMonitor = new PerformanceMonitor({
             state: TheWorldState,
             logger: this.logger,
-            dataManager: this.dataManager
+            dataManager: this.dataManager,
+            toastr: this.toastr
         });
         this.dependencies.performanceMonitor = this.performanceMonitor;
         this.performanceMonitor.checkAndStart();

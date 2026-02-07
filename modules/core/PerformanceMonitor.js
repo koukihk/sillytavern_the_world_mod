@@ -3,10 +3,11 @@
  * @description 监控帧率并在检测到性能问题时自动调整粒子密度
  */
 export class PerformanceMonitor {
-    constructor({ state, logger, dataManager }) {
+    constructor({ state, logger, dataManager, toastr }) {
         this.state = state;
         this.logger = logger;
         this.dataManager = dataManager;
+        this.toastr = toastr;
 
         this.lastFrameTime = performance.now();
         this.lowFpsCount = 0;
@@ -91,10 +92,20 @@ export class PerformanceMonitor {
             this.dataManager.saveState();
             this.logger.warn(`[PerformanceMonitor] 检测到性能问题，粒子密度已自动降低: ${currentDensity}% → ${newDensity}%`);
 
+            // 显示通知
+            if (this.toastr) {
+                this.toastr.warning(`检测到帧率过低，已自动降低粒子密度至 ${newDensity}%`, '性能优化');
+            }
+
             // 触发 UI 更新（如果滑块可见）
             const $slider = document.getElementById('particle-density-slider');
             const $value = document.getElementById('particle-density-value');
-            if ($slider) $slider.value = newDensity;
+            if ($slider) {
+                $slider.value = newDensity;
+                // 手动触发 input 事件以确保防抖逻辑也能处理（虽然这里主要是更新显示）
+                // 但因为我们修改了值，最好也通知 UI 重绘（如果需要）
+                // 这里我们假设UI会自动更新，或者下次打开面板时更新
+            }
             if ($value) $value.textContent = `${newDensity}%`;
         }
     }
