@@ -158,8 +158,13 @@ export class WeatherSystem {
                     densityMultiplier: this.state.particleDensity / 100
                 });
                 this.sakuraInstance = SakuraFX;
+            } else if (this.sakuraInstance) {
+                // 樱花已激活，同步密度变化
+                this.sakuraInstance.setDensityFactor(
+                    this.state.particleDensity / 100,
+                    this.state.isLowPerformanceMode
+                );
             }
-            // If it was already sakura, do nothing, let the instance manage its state.
         } else if (wasSakura && this.sakuraInstance) {
             // Weather changed from sakura to something else
             this.logger.log('[天气系统] 正在停止樱花特效...');

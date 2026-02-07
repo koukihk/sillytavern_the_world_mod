@@ -41,6 +41,8 @@ export class Clouds3dFX {
                 this._lastUserDensity = this.state.particleDensity;
                 this._lastLowPerfMode = this.state.isLowPerformanceMode;
                 this._generate(transitionDuration);
+                // 重新生成后必须重新应用颜色滤镜
+                this.updateCloudColor(period, weather);
             }
             return;
         }
@@ -132,9 +134,12 @@ export class Clouds3dFX {
 
     _generate(transitionDuration = '7s') {
         this.layers = [];
-        this.$(this.world).empty();
+        // 淡出效果：先隐藏，清空后淡入
+        const $world = this.$(this.world);
+        $world.css({ opacity: 0, transition: 'opacity 0.5s ease-in-out' });
+        $world.empty();
+
         // PERFORMANCE OPTIMIZATION: Reduced the base number of cloud clusters
-        // 省电模式下减少云团数量
         // 省电模式下减少云团数量
         const baseCount = this.state.isLowPerformanceMode ? 6 : 12;
         // 粒子密度滑块影响
@@ -146,6 +151,11 @@ export class Clouds3dFX {
         for (let j = 0; j < cloudCount; j++) {
             this._createCloud(transitionDuration);
         }
+
+        // 淡入效果
+        requestAnimationFrame(() => {
+            $world.css('opacity', 1);
+        });
     }
 
     _createCloud(transitionDuration) {

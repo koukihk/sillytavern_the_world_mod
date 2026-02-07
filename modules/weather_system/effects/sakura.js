@@ -254,8 +254,12 @@ export const SakuraFX = {
 
             if (progress >= 1) {
                 this.isTransitioning = false;
-                this.densityMode = 'sparse';
-                this.pointFlower.numFlowers = this.targetParticles; // Set the new cap
+                // 只有在 transitionToSparse 触发时才修改 densityMode 和 numFlowers
+                if (this._isSparseTransition) {
+                    this.densityMode = 'sparse';
+                    this.pointFlower.numFlowers = this.targetParticles; // Set the new cap
+                    this._isSparseTransition = false;
+                }
                 if (this.activeParticles > this.pointFlower.numFlowers) {
                     this.activeParticles = this.pointFlower.numFlowers;
                 }
@@ -274,9 +278,31 @@ export const SakuraFX = {
         if (this.isTransitioning || this.densityMode === 'sparse') return;
 
         this.isTransitioning = true;
+        this._isSparseTransition = true; // 标记这是 sparse 过渡
         this.transitionStartTime = performance.now();
         this.initialParticles = this.activeParticles;
         this.initialRenderPasses = this.renderPasses;
+    },
+
+    // 动态调整粒子密度（供外部调用）
+    setDensityFactor: function (factor, isLowPerf) {
+        if (!this.animating || !this.pointFlower) return;
+
+        // 计算新的目标粒子数量
+        const lowPerfMultiplier = isLowPerf ? 0.5 : 1.0;
+        const newTarget = Math.max(10, Math.floor(this.pointFlower.numFlowers * factor * lowPerfMultiplier));
+
+        // 如果目标没有显著变化，跳过
+        if (Math.abs(newTarget - this.targetParticles) < 5) return;
+
+        // 启动平滑过渡
+        this.isTransitioning = true;
+        this.transitionStartTime = performance.now();
+        this.initialParticles = this.activeParticles;
+        this.targetParticles = newTarget;
+        // 调整过渡时长：变化越大，过渡越久
+        const changeRatio = Math.abs(newTarget - this.activeParticles) / this.pointFlower.numFlowers;
+        this.transitionDuration = Math.max(500, Math.min(3000, changeRatio * 5000));
     },
 
     onResize: function () {
