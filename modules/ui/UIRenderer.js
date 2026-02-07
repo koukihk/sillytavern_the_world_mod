@@ -666,6 +666,14 @@ export class UIRenderer {
                         <span class="tw-checkmark"></span>
                     </label>`
         )}
+                ${createCard(
+            settingTitle('zap', '省电模式'),
+            '开启后大幅减少粒子数量，提升低配设备性能。',
+            `<label class="tw-checkbox">
+                        <input type="checkbox" id="low-performance-mode-toggle" ${this.state.isLowPerformanceMode ? 'checked' : ''}>
+                        <span class="tw-checkmark"></span>
+                    </label>`
+        )}
             </div>
         `;
 

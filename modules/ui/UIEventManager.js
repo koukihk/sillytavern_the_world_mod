@@ -195,6 +195,7 @@ export class UIEventManager {
                 'raindrop-fx-toggle': 'isRaindropFxOn',
                 'weather-fx-toggle': 'weatherFxEnabled',
                 'high-performance-fx-toggle': 'isHighPerformanceFxEnabled',
+                'low-performance-mode-toggle': 'isLowPerformanceMode',
                 'audio-enabled-toggle': 'isAudioEnabled'
             };
             const key = keyMap[e.target.id];

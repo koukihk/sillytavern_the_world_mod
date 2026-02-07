@@ -50,6 +50,7 @@ export class DataManager {
         assignSetting('isRaindropFxOn', this.state.isRaindropFxOn);
         assignSetting('weatherFxEnabled', this.state.weatherFxEnabled);
         assignSetting('isHighPerformanceFxEnabled', this.state.isHighPerformanceFxEnabled);
+        assignSetting('isLowPerformanceMode', this.state.isLowPerformanceMode);
         assignSetting('locationFxEnabled', this.state.locationFxEnabled);
         assignSetting('celestialFxEnabled', this.state.celestialFxEnabled);
         assignSetting('panelWidth', this.state.panelWidth);
@@ -81,6 +82,7 @@ export class DataManager {
             isRaindropFxOn: this.state.isRaindropFxOn,
             weatherFxEnabled: this.state.weatherFxEnabled,
             isHighPerformanceFxEnabled: this.state.isHighPerformanceFxEnabled,
+            isLowPerformanceMode: this.state.isLowPerformanceMode,
             locationFxEnabled: this.state.locationFxEnabled,
             celestialFxEnabled: this.state.celestialFxEnabled,
             panelWidth: this.state.panelWidth,

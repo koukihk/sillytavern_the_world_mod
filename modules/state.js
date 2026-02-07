@@ -39,6 +39,7 @@ export const TheWorldState = {
     isRaindropFxOn: false,
     weatherFxEnabled: true,
     isHighPerformanceFxEnabled: true,
+    isLowPerformanceMode: false, // 省电模式：大幅减少粒子数量提升性能
     locationFxEnabled: true,
     celestialFxEnabled: true,
     isSkygazingModeActive: false,
