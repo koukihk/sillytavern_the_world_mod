@@ -335,6 +335,7 @@
     transition: all .2s ease;
     width: 100%;
     font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+    white-space: nowrap;
 }
 
 .tw-action-btn:hover {
