@@ -23,7 +23,7 @@ export const TheWorldState = {
     panelHeight: null,
     panelTop: 60,
     panelLeft: null,
-    buttonTop: 10,
+    buttonTop: 65,
     buttonLeft: null,
     liteMapPathStack: [], // For lite map navigation state
     advancedMapPathStack: [], // For advanced map navigation state
@@ -51,6 +51,7 @@ export const TheWorldState = {
     panelOpacity: 50, // Panel transparency 0-100
     panelBlur: 12, // Panel blur 0-20px
     mapMode: 'advanced', // 'lite' or 'advanced'
+    fontColor: '', // Custom font color for panel text (empty = default)
 
     // --- Audio Settings ---
     isAudioEnabled: true,

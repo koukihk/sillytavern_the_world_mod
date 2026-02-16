@@ -501,16 +501,17 @@ export class WeatherSystem {
         const { creator, targetCount, particleClass, interval } = effectConfig;
         if (!creator) return;
         const batchSize = Math.max(1, Math.floor(targetCount / 10));
+        // 用内存计数器替代每次循环查 DOM
+        let createdCount = $fxTarget.children(`.${particleClass}:not(.fading-out)`).length;
         const intervalId = setInterval(() => {
-            const currentCount = $fxTarget.children(`.${particleClass}:not(.fading-out)`).length;
-
-            if (currentCount >= targetCount) {
+            if (createdCount >= targetCount) {
                 clearInterval(intervalId);
                 if (this.weatherEffects.intervalId === intervalId) { this.weatherEffects.intervalId = null; }
                 return;
             }
-            for (let i = 0; i < batchSize && ($fxTarget.children(`.${particleClass}:not(.fading-out)`).length < targetCount); i++) {
+            for (let i = 0; i < batchSize && createdCount < targetCount; i++) {
                 creator();
+                createdCount++;
             }
         }, interval);
         this.weatherEffects.intervalId = intervalId;

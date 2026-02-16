@@ -68,6 +68,7 @@ export class DataManager {
         assignSetting('isAudioEnabled', this.state.isAudioEnabled);
         assignSetting('ambientVolume', this.state.ambientVolume);
         assignSetting('sfxVolume', this.state.sfxVolume);
+        assignSetting('fontColor', this.state.fontColor);
     }
 
     saveState() {
@@ -103,6 +104,7 @@ export class DataManager {
             isAudioEnabled: this.state.isAudioEnabled,
             ambientVolume: this.state.ambientVolume,
             sfxVolume: this.state.sfxVolume,
+            fontColor: this.state.fontColor,
         };
         this.logger.log('正在保存的设置:', settings);
         this._storage('save', this.config.STORAGE_KEYS.SETTINGS, settings);

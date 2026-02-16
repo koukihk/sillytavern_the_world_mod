@@ -173,6 +173,15 @@
     font-family: 'Outfit', sans-serif;
 }
 
+/* TimeAnimator 生成的 span 需要继承父元素大小，而非被 .ws-time-main span 缩小 */
+.ws-time-main .tw-time-animator-hours {
+    font-size: inherit;
+}
+
+.ws-time-main .tw-time-animator-minutes {
+    font-size: inherit;
+}
+
 .ws-time-secondary {
     margin-top: 5px;
     color: var(--text-secondary);
@@ -879,4 +888,62 @@
     cursor: pointer;
     border: none;
     box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+}
+
+/* === Font Color Picker === */
+.tw-color-picker-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.tw-color-picker-container input[type="color"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 36px;
+    height: 36px;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 2px;
+    background: transparent;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.tw-color-picker-container input[type="color"]:hover {
+    border-color: rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+}
+
+.tw-color-picker-container input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.tw-color-picker-container input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 5px;
+}
+
+.tw-color-reset-btn {
+    padding: 6px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--tw-font-color, var(--text-main));
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.tw-color-reset-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.tw-color-reset-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
 }

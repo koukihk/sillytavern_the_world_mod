@@ -534,7 +534,7 @@ export class UIRenderer {
             '在简洁的列表视图和高级的画布视图之间切换。',
             `<div class="tw-map-mode-switch" style="display: flex; gap: 5px; width: 100%;">
                         <button data-mode="lite" class="${this.state.mapMode === 'lite' ? 'active' : ''}" style="flex: 1; white-space: nowrap; min-width: 0; padding: 5px 2px;">列表</button>
-                        <button data-mode="advanced" class="${this.state.mapMode === 'advanced' ? 'active' : ''}" style="flex: 1; white-space: nowrap; min-width: 0; padding: 5px 2px;">地图</button>
+                        <button data-mode="advanced" class="${this.state.mapMode === 'advanced' ? 'active' : ''}" style="flex: 1; white-space: nowrap; min-width: 0; padding: 5px 2px;">画布</button>
                     </div>`
         )}
                 ${createCard(
@@ -547,6 +547,14 @@ export class UIRenderer {
                             <option value="16px" ${this.state.fontSize === '16px' ? 'selected' : ''}>中</option>
                             <option value="18px" ${this.state.fontSize === '18px' ? 'selected' : ''}>大</option>
                         </select>
+                    </div>`
+        )}
+                ${createCard(
+            settingTitle('type', '字体颜色'),
+            '自定义面板内文字颜色，解决复杂背景下文字不清晰的问题。',
+            `<div class="tw-color-picker-container">
+                        <input type="color" id="font-color-picker" value="${this.state.fontColor || '#e0e0e0'}">
+                        <button id="font-color-reset" class="tw-color-reset-btn has-ripple" title="恢复默认颜色" ${!this.state.fontColor ? 'disabled' : ''}>重置</button>
                     </div>`
         )}
                 ${createCard(

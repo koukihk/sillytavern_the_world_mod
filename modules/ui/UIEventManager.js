@@ -317,9 +317,27 @@ export class UIEventManager {
             this.logger.log(`字体大小已更改为: ${newSize}`);
         });
 
+        $panel.on('input.tw_settings', '#font-color-picker', (e) => {
+            const color = e.target.value;
+            this.state.fontColor = color;
+            this.ui.applyFontColor();
+            this.$('#font-color-reset').prop('disabled', false);
+        });
+        $panel.on('change.tw_settings', '#font-color-picker', () => {
+            this.dataManager.saveState();
+        });
+        $panel.on('click.tw_settings', '#font-color-reset', () => {
+            this.state.fontColor = '';
+            this.ui.applyFontColor();
+            this.$('#font-color-picker').val('#e0e0e0');
+            this.$('#font-color-reset').prop('disabled', true);
+            this.dataManager.saveState();
+        });
+
         $panel.on('click.tw_settings', '#clear-all-data-btn', async () => {
             if (confirm('确定要清空所有存储的数据吗？\n此操作无法撤销！')) {
                 this.dataManager.clearAllStorage();
+                this.ui._settingsRendered = false;
                 await this.ui.updateAllPanes();
             }
         });

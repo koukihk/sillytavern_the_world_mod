@@ -16,13 +16,15 @@ export class InjectionEngine {
      * @param {string} cssText The CSS rules to inject.
      */
     injectCss(id, cssText) {
-        this.removeCss(id); // Ensure no duplicates
-        const styleElement = this.win.document.createElement('style');
-        styleElement.id = id;
-        styleElement.type = 'text/css';
-        styleElement.appendChild(this.win.document.createTextNode(cssText));
-        this.win.document.head.appendChild(styleElement);
-        this.logger.log(`已向主文档注入CSS: #${id}`);
+        let styleElement = this.win.document.getElementById(id);
+        if (!styleElement) {
+            styleElement = this.win.document.createElement('style');
+            styleElement.id = id;
+            styleElement.type = 'text/css';
+            this.win.document.head.appendChild(styleElement);
+            this.logger.log(`已向主文档注入CSS: #${id}`);
+        }
+        styleElement.textContent = cssText;
     }
 
     /**

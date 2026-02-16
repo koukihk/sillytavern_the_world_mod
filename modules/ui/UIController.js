@@ -68,6 +68,7 @@ export class UIController {
         this.panelManager.applyInitialPanelState();
         this.eventManager.bindAllEvents();
         this.applyFontSize();
+        this.applyFontColor();
         this.handleResize(); // Initial check
         this.logger.log('UIController 初始化完成。');
     }
@@ -160,11 +161,29 @@ export class UIController {
         }
     }
 
+    applyFontColor() {
+        const FONT_COLOR_STYLE_ID = 'tw-custom-font-color-style';
+        if (this.state.fontColor) {
+            const color = this.state.fontColor;
+            const css = `
+                .tw-panel,
+                .tw-panel *:not(input):not(button):not(select):not(.tw-color-reset-btn):not(.has-ripple):not(.tw-settings-nav-item),
+                .ws-dialog-overlay,
+                .ws-dialog-overlay *:not(input):not(button):not(select):not(textarea),
+                .ws-dialog-overlay .dialog_cancel {
+                    color: ${color} !important;
+                }
+            `;
+            this.dependencies.injectionEngine.injectCss(FONT_COLOR_STYLE_ID, css);
+        } else {
+            this.dependencies.injectionEngine.removeCss(FONT_COLOR_STYLE_ID);
+        }
+    }
+
     async updateAllPanes() {
         this.logger.log('正在更新所有面板内容...');
         const $wsPane = this.$('#world-state-pane').empty();
         const $mapPane = this.$('#map-nav-pane').empty();
-        const $settingsPane = this.$('#settings-pane').empty();
 
         this.timeAnimator.stop();
 
@@ -184,7 +203,22 @@ export class UIController {
 
         // Render map and settings panes regardless of world state
         await this.renderer.renderMapPane($mapPane);
-        this.renderer.renderSettingsPane($settingsPane);
+
+        // 设置面板内容不随消息变化，只渲染一次
+        if (!this._settingsRendered) {
+            const $settingsPane = this.$('#settings-pane').empty();
+            this.renderer.renderSettingsPane($settingsPane);
+            this._settingsRendered = true;
+        }
+
+        // 用保存的 state 值初始化面板透明度和模糊度 CSS 变量
+        const $panel = this.$('.tw-panel');
+        if (this.state.panelOpacity !== undefined && this.state.panelOpacity !== null) {
+            $panel.css('--tw-panel-bg-opacity', this.state.panelOpacity / 100);
+        }
+        if (this.state.panelBlur !== undefined && this.state.panelBlur !== null) {
+            $panel.css('--tw-panel-blur', `${this.state.panelBlur}px`);
+        }
 
         if (this.state.mapMode === 'advanced') {
             this.eventManager.mapViewportManager.updateMapOverlays();

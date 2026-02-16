@@ -45,7 +45,7 @@ export class UIPanelManager {
 
         this.checkPanelWidth();
         this.logger.log(`初始面板位置和大小已设置:`, { top: this.state.panelTop, left: this.state.panelLeft, width: this.state.panelWidth, height: this.state.panelHeight });
-    
+
         // Apply button position
         if (this.state.buttonLeft === null || isNaN(this.state.buttonLeft)) {
             this.state.buttonLeft = this.win.innerWidth - $button.outerWidth() - 10;
@@ -103,28 +103,6 @@ export class UIPanelManager {
                 $doc.off('mousemove.tw_drag touchmove.tw_drag', onMove);
                 $doc.off('mouseup.tw_drag touchend.tw_drag', onEnd);
 
-                // This logic should apply to both panel and button
-                const finalPos = $element.position();
-                const snapThreshold = 50;
-                const newPos = { top: finalPos.top, left: finalPos.left };
-                let shouldAnimate = false;
-
-                if (finalPos.top < snapThreshold) {
-                    newPos.top = 0;
-                    shouldAnimate = true;
-                } else if (this.win.innerHeight - (finalPos.top + $element.outerHeight()) < snapThreshold) {
-                    newPos.top = this.win.innerHeight - $element.outerHeight();
-                    shouldAnimate = true;
-                }
-
-                if (finalPos.left < snapThreshold) {
-                    newPos.left = 0;
-                    shouldAnimate = true;
-                } else if (this.win.innerWidth - (finalPos.left + $element.outerWidth()) < snapThreshold) {
-                    newPos.left = this.win.innerWidth - $element.outerWidth();
-                    shouldAnimate = true;
-                }
-
                 const saveState = (pos) => {
                     if (isButton) {
                         this.state.buttonTop = pos.top;
@@ -136,11 +114,7 @@ export class UIPanelManager {
                     this.dataManager.saveState();
                 };
 
-                if (shouldAnimate) {
-                    $element.animate(newPos, 200, () => saveState(newPos));
-                } else {
-                    saveState(finalPos);
-                }
+                saveState(finalPos);
             };
 
             $doc.on('mousemove.tw_drag touchmove.tw_drag', onMove);

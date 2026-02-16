@@ -38,7 +38,7 @@ export class UIDialogs {
             '云': { variants: { '少云': {}, '多云': {}, '阴天': {} } },
             '风': { variants: { '微风': {}, '大风': {}, '狂风': {} } },
             '雨': { variants: { '小雨': {}, '中雨': {}, '大雨': {}, '暴雨': { addons: { '雷电': {} } } } },
-            '雪': { variants: { '小雪': {}, '中雪': {}, '大雪': {}, '暴雨': {} } },
+            '雪': { variants: { '小雪': {}, '中雪': {}, '大雪': {}, '暴雪': {} } },
             '特殊': { variants: { '樱花雨': {}, '起雾': {}, '烟花': {} } }
         };
 
@@ -53,148 +53,92 @@ export class UIDialogs {
         };
 
         const content = this.$(`
-            <div class="tw-weather-scroller-container">
-                <div class="tw-weather-scroller-column" id="tw-weather-type"></div>
-                <div class="tw-weather-scroller-column" id="tw-weather-variant"></div>
-                <div class="tw-weather-scroller-column" id="tw-weather-addon"></div>
-                <div class="tw-weather-scroller-highlight"></div>
+            <div class="tw-weather-picker">
+                <div class="tw-weather-step">
+                    <div class="tw-weather-step-label">天气类型</div>
+                    <div class="tw-weather-chips" id="tw-weather-type-chips"></div>
+                </div>
+                <div class="tw-weather-step">
+                    <div class="tw-weather-step-label">强度 / 变体</div>
+                    <div class="tw-weather-chips" id="tw-weather-variant-chips"></div>
+                </div>
+                <div class="tw-weather-step tw-weather-addon-step" style="display:none;">
+                    <div class="tw-weather-step-label">附加效果</div>
+                    <div class="tw-weather-chips" id="tw-weather-addon-chips"></div>
+                </div>
             </div>
         `);
 
         const buttons = this.$('<div class="ws-dialog-buttons"><button class="dialog_cancel has-ripple">关闭</button><button class="dialog_confirm has-ripple">确认</button></div>');
         const dialog = this.createDialog('改变天气', content, buttons);
 
-        const columns = {
-            type: dialog.find('#tw-weather-type'),
-            variant: dialog.find('#tw-weather-variant'),
-            addon: dialog.find('#tw-weather-addon')
-        };
-
         let selections = { type: null, variant: null, addon: null };
 
-        const populateColumn = (colName, items) => {
-            const $col = columns[colName];
-            $col.empty();
-            if (!items || items.length === 0) {
-                $col.addClass('disabled');
-                return;
-            }
-            $col.removeClass('disabled');
-            const $list = this.$('<ul class="tw-weather-scroller-list">');
-            $list.css('padding-top', '50px'); // Padding for centering first item
+        const renderChips = ($container, items, onSelect) => {
+            $container.empty();
             items.forEach(item => {
                 const iconName = iconMap[item];
-                const iconHtml = iconName ? getIcon(iconName, 'tw-weather-icon') : '';
-                $list.append(`<li class="tw-weather-scroller-item" data-value="${item}">${iconHtml} ${item}</li>`);
+                const iconHtml = iconName ? getIcon(iconName, 'tw-weather-chip-icon') : '';
+                const $chip = this.$(`<button class="tw-weather-chip has-ripple" data-value="${item}">${iconHtml}<span>${item}</span></button>`);
+                $chip.on('click', () => {
+                    $container.find('.tw-weather-chip').removeClass('active');
+                    $chip.addClass('active');
+                    onSelect(item);
+                });
+                $container.append($chip);
             });
-            $list.append('<li class="tw-weather-scroller-item" style="height: 50px;"></li>'); // Padding for centering last item
-            $col.append($list);
         };
 
-        const setupScroller = ($col) => {
-            const $list = $col.find('.tw-weather-scroller-list');
-            if (!$list.length) return;
-
-            let isDragging = false, startY, startTop;
-            const itemHeight = 50;
-            const $doc = this.$(this.win.document);
-
-            const snap = () => {
-                const currentTop = parseInt($list.css('transform').split(',')[5] || 0, 10) || 0;
-                let selectedIndex = Math.round(-currentTop / itemHeight);
-                // 使用 data-value 属性精确统计实际可选项目数（排除底部 padding dummy）
-                const itemCount = $list.children('[data-value]').length;
-                selectedIndex = Math.max(0, Math.min(selectedIndex, itemCount - 1));
-
-                $list.css('transform', `translateY(${-selectedIndex * itemHeight}px)`);
-                $list.children('.selected').removeClass('selected');
-                const $selectedItem = $list.children().eq(selectedIndex);
-                $selectedItem.addClass('selected');
-
-                const colName = $col.attr('id').split('-')[2];
-                const newValue = $selectedItem.data('value');
-
-                if (selections[colName] !== newValue) {
-                    selections[colName] = newValue;
-                    updateDependentColumns(colName);
-                }
-            };
-
-            const getCoords = e => e.type.startsWith('touch') ? e.originalEvent.touches[0] || e.originalEvent.changedTouches[0] : e;
-
-            const onDragStart = (e) => {
-                if ($col.hasClass('disabled')) return;
-                e.preventDefault();
-                isDragging = true;
-                const coords = getCoords(e);
-                startY = coords.pageY;
-                startTop = parseInt($list.css('transform').split(',')[5] || 0, 10) || 0;
-                $list.css('transition', 'none');
-                $col.addClass('grabbing');
-                $doc.on('mousemove.tw_scroller touchmove.tw_scroller', onDragMove);
-                $doc.on('mouseup.tw_scroller touchend.tw_scroller', onDragEnd);
-            };
-
-            const onDragMove = (e) => {
-                if (!isDragging) return;
-                e.preventDefault();
-                const moveCoords = getCoords(e);
-                const deltaY = moveCoords.pageY - startY;
-
-                // 使用 data-value 属性精确统计实际可选项目数
-                const itemCount = $list.children('[data-value]').length;
-                const minTop = -(itemCount - 1) * itemHeight; // 允许滑到最后一个实际项目
-                const maxTop = 0; // First item
-                const newTop = Math.max(minTop, Math.min(maxTop, startTop + deltaY));
-
-                $list.css('transform', `translateY(${newTop}px)`);
-            };
-
-            const onDragEnd = () => {
-                if (!isDragging) return;
-                isDragging = false;
-                $col.removeClass('grabbing');
-                $list.css('transition', 'transform 0.2s ease-out');
-                snap();
-                $doc.off('.tw_scroller');
-            };
-
-            $col.on('mousedown.tw_scroller touchstart.tw_scroller', onDragStart);
-        };
-
-        const updateDependentColumns = (changedColName) => {
-            if (changedColName === 'type') {
-                const typeData = weatherData[selections.type];
-                const variantItems = typeData ? Object.keys(typeData.variants) : [];
-                populateColumn('variant', variantItems);
+        const updateVariants = (type) => {
+            const typeData = weatherData[type];
+            const variantItems = typeData ? Object.keys(typeData.variants) : [];
+            const $variantContainer = dialog.find('#tw-weather-variant-chips');
+            renderChips($variantContainer, variantItems, (variant) => {
+                selections.variant = variant;
+                updateAddons(type, variant);
+            });
+            if (variantItems.length > 0) {
                 selections.variant = variantItems[0];
-                setupScroller(columns.variant);
-                columns.variant.find('.tw-weather-scroller-list').css('transform', 'translateY(0px)').children().eq(0).addClass('selected');
-            }
-
-            const typeData = weatherData[selections.type];
-            if (!typeData) return;
-            const variantData = typeData.variants[selections.variant];
-            const addonItems = (variantData && variantData.addons) ? Object.keys(variantData.addons) : [];
-            populateColumn('addon', addonItems);
-            selections.addon = addonItems.length > 0 ? addonItems[0] : null;
-            setupScroller(columns.addon);
-            if (addonItems.length > 0) {
-                columns.addon.find('.tw-weather-scroller-list').css('transform', 'translateY(0px)').children().eq(0).addClass('selected');
+                $variantContainer.find('.tw-weather-chip').first().addClass('active');
+                updateAddons(type, variantItems[0]);
             }
         };
 
-        // Initial Population
-        const typeKeys = Object.keys(weatherData);
-        populateColumn('type', typeKeys);
-        selections.type = typeKeys[0];
-        updateDependentColumns('type');
-        Object.values(columns).forEach(setupScroller);
+        const updateAddons = (type, variant) => {
+            const typeData = weatherData[type];
+            if (!typeData) return;
+            const variantData = typeData.variants[variant];
+            const addonItems = (variantData && variantData.addons) ? Object.keys(variantData.addons) : [];
+            const $addonStep = dialog.find('.tw-weather-addon-step');
+            const $addonContainer = dialog.find('#tw-weather-addon-chips');
 
-        setTimeout(() => {
-            columns.type.find('.tw-weather-scroller-list').children().eq(0).addClass('selected');
-            columns.variant.find('.tw-weather-scroller-list').children().eq(0).addClass('selected');
-        }, 50);
+            if (addonItems.length > 0) {
+                $addonStep.show();
+                renderChips($addonContainer, addonItems, (addon) => {
+                    // 允许取消选中
+                    if (selections.addon === addon) {
+                        selections.addon = null;
+                        $addonContainer.find('.tw-weather-chip').removeClass('active');
+                    } else {
+                        selections.addon = addon;
+                    }
+                });
+                selections.addon = null;
+            } else {
+                $addonStep.hide();
+                selections.addon = null;
+            }
+        };
+
+        // 初始填充
+        const typeKeys = Object.keys(weatherData);
+        renderChips(dialog.find('#tw-weather-type-chips'), typeKeys, (type) => {
+            selections.type = type;
+            updateVariants(type);
+        });
+        selections.type = typeKeys[0];
+        dialog.find('#tw-weather-type-chips .tw-weather-chip').first().addClass('active');
+        updateVariants(typeKeys[0]);
 
         dialog.find('.dialog_confirm').on('click', () => {
             let finalText = '';

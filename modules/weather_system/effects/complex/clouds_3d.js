@@ -200,15 +200,15 @@ export class Clouds3dFX {
     _updateLoop() {
         if (!this.isActive) return;
 
-        // Simplified rotation - only rotate the entire world, not individual layers against it
-        this.worldYAngle += 0.01; // Slightly increased speed to compensate for less complex motion
-        this.worldXAngle += 0.004;
+        this._frameSkipCount = (this._frameSkipCount || 0) + 1;
+        if (this._frameSkipCount % 3 === 0) {
+            // Simplified rotation - only rotate the entire world, not individual layers against it
+            this.worldYAngle += 0.03; // Compensated: 0.01 * 3 frames
+            this.worldXAngle += 0.012; // Compensated: 0.004 * 3 frames
 
-        const t = `translateZ(${this.d}px) rotateX(${this.worldXAngle}deg) rotateY(${this.worldYAngle}deg)`;
-        this.world.style.transform = t;
-
-        // The individual layer transforms are now static, set only at creation.
-        // This avoids recalculating hundreds of transforms every frame.
+            const t = `translateZ(${this.d}px) rotateX(${this.worldXAngle}deg) rotateY(${this.worldYAngle}deg)`;
+            this.world.style.transform = t;
+        }
 
         this.animationFrameId = requestAnimationFrame(this._updateLoop);
     }

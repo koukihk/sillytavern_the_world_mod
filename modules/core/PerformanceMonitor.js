@@ -9,18 +9,15 @@ export class PerformanceMonitor {
         this.dataManager = dataManager;
         this.toastr = toastr;
 
-        this.lastFrameTime = performance.now();
         this.lowFpsCount = 0;
-        this.frameCount = 0;
         this.isRunning = false;
-        this.rafId = null;
+        this.samplingIntervalId = null;
 
         // 配置
         this.FPS_THRESHOLD = 25; // 低于此帧率视为掉帧
-        this.LOW_FPS_TRIGGER = 15; // 连续多少帧低帧率后触发调整
+        this.LOW_FPS_TRIGGER = 5; // 连续多少次低帧率后触发调整 (每次间隔3秒)
         this.DENSITY_REDUCTION = 10; // 每次降低的密度百分比
         this.MIN_DENSITY = 20; // 最低粒子密度
-        this.CHECK_INTERVAL = 60; // 每隔多少帧检查一次
     }
 
     start() {
@@ -28,37 +25,33 @@ export class PerformanceMonitor {
 
         this.isRunning = true;
         this.logger.log('[PerformanceMonitor] 已启动性能监控');
-        this._loop();
+        this._startSampling();
     }
 
     stop() {
         if (!this.isRunning) return;
 
         this.isRunning = false;
-        if (this.rafId) {
-            cancelAnimationFrame(this.rafId);
-            this.rafId = null;
+        if (this.samplingIntervalId) {
+            clearInterval(this.samplingIntervalId);
+            this.samplingIntervalId = null;
         }
         this.logger.log('[PerformanceMonitor] 已停止性能监控');
     }
 
-    _loop() {
-        if (!this.isRunning) return;
-
-        const now = performance.now();
-        const deltaTime = now - this.lastFrameTime;
-        this.lastFrameTime = now;
-
-        // 计算当前帧率
-        const fps = 1000 / deltaTime;
-        this.frameCount++;
-
-        // 每隔一定帧数检查一次
-        if (this.frameCount % this.CHECK_INTERVAL === 0) {
-            this._checkPerformance(fps);
-        }
-
-        this.rafId = requestAnimationFrame(() => this._loop());
+    /**
+     * 每 3 秒采样一次帧率，而非持续运行 rAF 循环。
+     * 每次采样仅请求一个 rAF 来测量帧间隔时间。
+     */
+    _startSampling() {
+        this.samplingIntervalId = setInterval(() => {
+            if (!this.isRunning) return;
+            const t0 = performance.now();
+            requestAnimationFrame(() => {
+                const fps = 1000 / (performance.now() - t0);
+                this._checkPerformance(fps);
+            });
+        }, 3000);
     }
 
     _checkPerformance(fps) {
@@ -102,9 +95,6 @@ export class PerformanceMonitor {
             const $value = document.getElementById('particle-density-value');
             if ($slider) {
                 $slider.value = newDensity;
-                // 手动触发 input 事件以确保防抖逻辑也能处理（虽然这里主要是更新显示）
-                // 但因为我们修改了值，最好也通知 UI 重绘（如果需要）
-                // 这里我们假设UI会自动更新，或者下次打开面板时更新
             }
             if ($value) $value.textContent = `${newDensity}%`;
         }
