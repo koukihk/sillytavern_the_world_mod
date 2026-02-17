@@ -852,7 +852,8 @@
 }
 
 /* Range Slider (Purple Theme) */
-.tw-range-slider {
+.tw-range-slider,
+.tw-panel input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
@@ -863,7 +864,8 @@
     cursor: pointer;
 }
 
-.tw-range-slider::-webkit-slider-thumb {
+.tw-range-slider::-webkit-slider-thumb,
+.tw-panel input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 18px;
@@ -875,12 +877,14 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.tw-range-slider::-webkit-slider-thumb:hover {
+.tw-range-slider::-webkit-slider-thumb:hover,
+.tw-panel input[type="range"]::-webkit-slider-thumb:hover {
     transform: scale(1.1);
     box-shadow: 0 0 12px rgba(139, 92, 246, 0.7);
 }
 
-.tw-range-slider::-moz-range-thumb {
+.tw-range-slider::-moz-range-thumb,
+.tw-panel input[type="range"]::-moz-range-thumb {
     width: 18px;
     height: 18px;
     background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);

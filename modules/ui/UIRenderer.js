@@ -554,7 +554,7 @@ export class UIRenderer {
                 ${createCard(
             settingTitle('palette', '字体颜色'),
             '自定义面板文字颜色 (Hex/RGB/颜色名)。',
-            `<div class="tw-cdn-url-container tw-font-color-container" style="display: flex; gap: 8px; align-items: center;">
+            `<div class="tw-cdn-url-container tw-font-color-container" style="display: flex; gap: 8px; align-items: center; width: 100%;">
                         <div class="tw-color-picker-wrapper" style="position: relative; width: 36px; height: 36px; border-radius: 6px; overflow: hidden; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1);">
                             <input type="color" id="font-color-picker" value="${this.state.fontColor || '#e0e0e0'}" style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; cursor: pointer; padding: 0; margin: 0; border: none;">
                         </div>
@@ -573,7 +573,7 @@ export class UIRenderer {
                     </div>`
         )}
                 ${createCard(
-            settingTitle('droplet', '面板透明度'),
+            settingTitle('droplets', '面板透明度'),
             '调整面板背景的不透明度。',
             `<div class="tw-slider-container" style="width: 100%;">
                         <input type="range" id="panel-opacity-slider" min="10" max="100" step="5" value="${this.state.panelOpacity !== undefined ? this.state.panelOpacity : 45}">
@@ -631,14 +631,14 @@ export class UIRenderer {
 
         whiteNoiseControl = `
             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:100%;">
-                <label class="tw-checkbox">
-                    <input type="checkbox" id="white-noise-toggle" ${isEnabled ? 'checked' : ''}>
-                    <span class="tw-checkmark"></span>
-                </label>
                 <select id="white-noise-select" class="tw-white-noise-select" style="flex:1; min-width:120px;">
                     <option value="" ${!this.state.whiteNoiseTrack ? 'selected' : ''}>-- 无 --</option>
                     ${options}
                 </select>
+                <label class="tw-checkbox">
+                    <input type="checkbox" id="white-noise-toggle" ${isEnabled ? 'checked' : ''}>
+                    <span class="tw-checkmark"></span>
+                </label>
             </div>`;
 
         const whiteNoiseCard = createCard(
