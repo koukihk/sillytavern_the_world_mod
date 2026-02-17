@@ -57,4 +57,7 @@ export const TheWorldState = {
     isAudioEnabled: true,
     ambientVolume: 0.5,
     sfxVolume: 0.8,
+    audioCdnBaseUrl: '', // CDN base URL for remote audio files (e.g. https://cdn.jsdelivr.net/gh/user/repo/audio/)
+    whiteNoiseEnabled: false,
+    whiteNoiseTrack: 'rain_on_window.mp3', // Default white noise track
 };

@@ -7,6 +7,17 @@
  */
 import { Logger } from '../logger.js';
 
+const WHITE_NOISE_TRACKS = [
+    { file: 'rain_on_window.mp3', name: '🌧 窗外雨声' },
+    { file: 'river_stream.mp3', name: '🏞 溪流' },
+    { file: 'campfire.mp3', name: '🔥 篝火' },
+    { file: 'fireplace_indoor.mp3', name: '🏠 壁炉' },
+    { file: 'ocean_waves.mp3', name: '🌊 海浪' },
+    { file: 'night_crickets.mp3', name: '🦗 虫鸣夜晚' },
+    { file: 'forest_day.mp3', name: '🌳 白天森林' },
+    { file: 'forest_night.mp3', name: '🌙 夜晚森林' }
+];
+
 export class AudioManager {
     constructor({ $, win, state, config }) {
         this.$ = $;
@@ -21,8 +32,13 @@ export class AudioManager {
         this.ambientGain = null;
         this.sfxGain = null;
         this.currentAmbientSound = null;
+        this.whiteNoiseActive = false; // 白噪音是否正在播放
         this.isAudioUnlocked = false;
         this.activeSfxSources = []; // 跟踪正在播放的 SFX 音源
+
+        this.availableWhiteNoiseTracks = []; // 可用的白噪音列表
+        this.isCheckingAvailability = false; // 是否正在检测可用性
+        this.hasCheckedAvailability = false;
     }
 
     unlockAudio() {
@@ -60,32 +76,50 @@ export class AudioManager {
     }
 
     async _loadAudio(path) {
-        let finalPath = path;
-        if (!path.startsWith('assets/audio/')) {
-            finalPath = `assets/audio/${path.replace(/^.*[\\\/]/, '')}`;
-        }
-
-        if (this.audioCache[finalPath]) return this.audioCache[finalPath];
-
         const audioCtx = this._getAudioContext();
         if (!audioCtx) {
             this.logger.error(`Cannot load audio, AudioContext not available.`);
             return null;
         }
 
+        // 1. 如果是完整 URL，直接使用
+        if (path.startsWith('http://') || path.startsWith('https://')) {
+            if (this.audioCache[path]) return this.audioCache[path];
+            return this._fetchAndDecode(audioCtx, path, path);
+        }
+
+        // 2. 提取文件名
+        const fileName = path.replace(/^.*[\\\/]/, '');
+        const localPath = path.startsWith('assets/audio/') ? path : `assets/audio/${fileName}`;
+        if (this.audioCache[localPath]) return this.audioCache[localPath];
+
+        // 3. 如果设置了 CDN 基础 URL，优先从 CDN 加载
+        const cdnBaseUrl = this.state.audioCdnBaseUrl;
+        if (cdnBaseUrl) {
+            const cdnUrl = `${cdnBaseUrl.replace(/\/+$/, '')}/${fileName}`;
+            this.logger.log(`[Audio] Trying CDN: ${cdnUrl}`);
+            const buffer = await this._fetchAndDecode(audioCtx, cdnUrl, localPath);
+            if (buffer) return buffer;
+            this.logger.warn(`[Audio] CDN failed, falling back to local: ${localPath}`);
+        }
+
+        // 4. 回退到本地文件
         const scriptUrl = new URL(import.meta.url);
         const basePath = scriptUrl.pathname.substring(0, scriptUrl.pathname.lastIndexOf('/modules'));
-        const fullUrl = `${this.win.location.origin}${basePath}/${finalPath}`;
+        const fullUrl = `${this.win.location.origin}${basePath}/${localPath}`;
+        return this._fetchAndDecode(audioCtx, fullUrl, localPath);
+    }
 
+    async _fetchAndDecode(audioCtx, url, cacheKey) {
         try {
-            const response = await fetch(fullUrl);
+            const response = await fetch(url);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const arrayBuffer = await response.arrayBuffer();
             const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-            this.audioCache[finalPath] = audioBuffer;
+            this.audioCache[cacheKey] = audioBuffer;
             return audioBuffer;
         } catch (error) {
-            this.logger.error(`Failed to load audio from "${fullUrl}":`, error);
+            this.logger.error(`Failed to load audio from "${url}":`, error);
             return null;
         }
     }
@@ -99,8 +133,8 @@ export class AudioManager {
             this.fadeOutAllSfx({ fade_duration: 0.5 });
         }
 
-        // 处理环境音
-        if (!messageText.includes('[FX.PlayAmbient')) {
+        // 处理环境音 — 白噪音开启时跳过动态环境音管理
+        if (!this.whiteNoiseActive && !messageText.includes('[FX.PlayAmbient')) {
             if (this.currentAmbientSound) {
                 this.logger.log('New message lacks PlayAmbient command, stopping current ambient sound.');
                 this.stopAmbient({});
@@ -338,5 +372,81 @@ export class AudioManager {
         if (this.sfxGain && audioCtx) {
             this.sfxGain.gain.linearRampToValueAtTime(parseFloat(volume), audioCtx.currentTime + 0.1);
         }
+    }
+
+    // ==================== 白噪音 ====================
+
+    async startWhiteNoise(track) {
+        if (!track) return;
+        this.logger.log(`[Audio] Starting white noise: ${track}`);
+
+        // 先停止任何动态环境音
+        if (this.currentAmbientSound && !this.whiteNoiseActive) {
+            this.stopAmbient({ fade_duration: 1 });
+        }
+
+        this.whiteNoiseActive = true;
+        await this.playAmbient({ path: track, volume: 1.0, fade_duration: 2 });
+
+        // 关键修复：如果在加载过程中被用户关闭了白噪音，确保立即停止播放
+        if (!this.whiteNoiseActive) {
+            this.logger.log(`[Audio] White noise disabled during load, stopping: ${track}`);
+            this.stopAmbient({ fade_duration: 0.5 });
+        }
+    }
+
+    stopWhiteNoise() {
+        if (!this.whiteNoiseActive) {
+            // 防御性：即使标记为 false，如果有正在播放的环境音且那是白噪音（通过当前状态推断），也尝试停止
+            // 但为了安全起见，只处理显式停止
+            return;
+        }
+        this.logger.log('[Audio] Stopping white noise.');
+        this.whiteNoiseActive = false;
+        this.stopAmbient({ fade_duration: 2 });
+    }
+
+    async checkWhiteNoiseAvailability() {
+        if (this.isCheckingAvailability) return;
+        this.isCheckingAvailability = true;
+        // this.logger.log('[Audio] Checking availability of white noise tracks...');
+
+        const checkPromises = WHITE_NOISE_TRACKS.map(async (track) => {
+            let url;
+            // 构建 URL：逻辑与 _loadAudio 类似
+            if (this.state.audioCdnBaseUrl) {
+                url = `${this.state.audioCdnBaseUrl.replace(/\/+$/, '')}/${track.file}`;
+            } else {
+                // 本地路径
+                const scriptUrl = new URL(import.meta.url);
+                const basePath = scriptUrl.pathname.substring(0, scriptUrl.pathname.lastIndexOf('/modules'));
+                url = `${this.win.location.origin}${basePath}/assets/audio/${track.file}`;
+            }
+
+            try {
+                // 使用 HEAD 请求检查文件是否存在
+                const response = await fetch(url, { method: 'HEAD', cache: 'no-cache' });
+                if (response.ok) {
+                    return track;
+                } else if (response.status === 405) {
+                    // 如果 HEAD 不允许，尝试 GET Range
+                    const getResponse = await fetch(url, { method: 'GET', headers: { 'Range': 'bytes=0-0' } });
+                    if (getResponse.ok) return track;
+                }
+            } catch (e) {
+                // console.warn(`[Audio] Check failed for ${track.file}:`, e);
+            }
+            return null;
+        });
+
+        const results = await Promise.all(checkPromises);
+
+        // 过滤出有效的 tracks
+        this.availableWhiteNoiseTracks = results.filter(t => t !== null);
+        this.isCheckingAvailability = false;
+        this.hasCheckedAvailability = true; // 标记已完成一次检测
+        this.logger.log(`[Audio] Available white noise tracks: ${this.availableWhiteNoiseTracks.length}`);
+
+        return this.availableWhiteNoiseTracks;
     }
 }

@@ -127,6 +127,8 @@ export class UIEventManager {
             this.audioManager.setMasterEnabled(this.state.isAudioEnabled);
             this.dataManager.saveState();
             this.ui.updateAudioToggleIcon();
+            // 同步设置面板中的勾选框
+            this.$('#audio-enabled-toggle').prop('checked', this.state.isAudioEnabled);
         });
 
         // Settings Pane
@@ -223,6 +225,8 @@ export class UIEventManager {
                     }
                 } else if (key === 'isAudioEnabled') {
                     this.audioManager.setMasterEnabled(e.target.checked);
+                    // 同步面板头部的音频按钮图标
+                    this.ui.updateAudioToggleIcon();
                 } else {
                     this.panelThemeManager.applyThemeAndEffects(this.state.latestWorldStateData);
                 }
@@ -305,6 +309,52 @@ export class UIEventManager {
                 // Update active state
                 this.$('.tw-nav-item').removeClass('active');
                 this.$(e.currentTarget).addClass('active');
+            }
+        });
+
+        // CDN URL input
+        $panel.on('change.tw_settings', '#audio-cdn-url-input', (e) => {
+            this.state.audioCdnBaseUrl = e.target.value.trim();
+            this.audioManager.audioCache = {}; // Clear cache to use new CDN
+            this.dataManager.saveState();
+            this.logger.log(`[Audio] CDN base URL updated to: ${this.state.audioCdnBaseUrl || '(empty)'}`);
+
+            // CDN 改变后，重新检查白噪音可用性
+            this.audioManager.isCheckingAvailability = false; // Reset lock if needed
+            this.audioManager.hasCheckedAvailability = false; // Reset checked status
+            this.audioManager.checkWhiteNoiseAvailability().then(tracks => {
+                const count = tracks ? tracks.length : 0;
+                this.toastr.success(`音频源已更新，检测到 ${count} 个可用白噪音文件。`);
+
+                const $pane = this.$('#settings-pane');
+                if ($pane.length && $pane.is(':visible')) {
+                    const scrollTop = $pane.scrollTop();
+                    if (this.renderer && typeof this.renderer.renderSettingsPane === 'function') {
+                        this.renderer.renderSettingsPane($pane, this.audioManager);
+                        $pane.scrollTop(scrollTop);
+                    }
+                }
+            });
+            this.toastr.info('正在检测新 CDN 下的音频文件...');
+        });
+
+        // White Noise toggle
+        $panel.on('change.tw_settings', '#white-noise-toggle', (e) => {
+            this.state.whiteNoiseEnabled = e.target.checked;
+            this.dataManager.saveState();
+            if (this.state.whiteNoiseEnabled) {
+                this.audioManager.startWhiteNoise(this.state.whiteNoiseTrack);
+            } else {
+                this.audioManager.stopWhiteNoise();
+            }
+        });
+
+        // White Noise track selector
+        $panel.on('change.tw_settings', '#white-noise-select', (e) => {
+            this.state.whiteNoiseTrack = e.target.value;
+            this.dataManager.saveState();
+            if (this.state.whiteNoiseEnabled) {
+                this.audioManager.startWhiteNoise(this.state.whiteNoiseTrack);
             }
         });
 

@@ -77,6 +77,8 @@ export class TheWorldApp {
         const audioManager = new AudioManager(this.dependencies);
         this.audioManager = audioManager;
         this.dependencies.audioManager = audioManager;
+        // 启动时检查白噪音可用性（异步）
+        this.audioManager.checkWhiteNoiseAvailability();
 
         this.commandParser = new CommandParser(this.dependencies);
 

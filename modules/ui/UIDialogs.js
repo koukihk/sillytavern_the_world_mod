@@ -47,7 +47,7 @@ export class UIDialogs {
             '云': 'cloud', '少云': 'cloud', '多云': 'cloud', '阴天': 'cloud',
             '风': 'wind', '微风': 'wind', '大风': 'wind', '狂风': 'wind',
             '雨': 'cloudRain', '小雨': 'cloudRain', '中雨': 'cloudRain', '大雨': 'cloudRain', '暴雨': 'cloudLightning',
-            '雪': 'cloudSnow', '小雪': 'cloudSnow', '中雪': 'cloudSnow', '大雪': 'cloudSnow',
+            '雪': 'cloudSnow', '小雪': 'cloudSnow', '中雪': 'cloudSnow', '大雪': 'cloudSnow', '暴雪': 'cloudSnow',
             '特殊': 'sparkles', '樱花雨': 'sparkles', '起雾': 'cloud', '烟花': 'sparkles',
             '雷电': 'zap'
         };

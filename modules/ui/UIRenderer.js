@@ -472,7 +472,7 @@ export class UIRenderer {
         return '🌍'; // Default icon
     }
 
-    renderSettingsPane($pane) {
+    renderSettingsPane($pane, explicitAudioManager = null) {
         $pane.empty();
 
         // 辅助函数：生成带图标的设置项标题
@@ -550,28 +550,36 @@ export class UIRenderer {
                     </div>`
         )}
                 ${createCard(
-            settingTitle('type', '字体颜色'),
-            '自定义面板内文字颜色，解决复杂背景下文字不清晰的问题。',
-            `<div class="tw-color-picker-container">
-                        <input type="color" id="font-color-picker" value="${this.state.fontColor || '#e0e0e0'}">
-                        <button id="font-color-reset" class="tw-color-reset-btn has-ripple" title="恢复默认颜色" ${!this.state.fontColor ? 'disabled' : ''}>重置</button>
+            settingTitle('palette', '字体颜色'),
+            '自定义面板文字颜色 (Hex/RGB/颜色名)。',
+            `<div class="tw-input-container">
+                        <input type="text" id="font-color-input" class="tw-input" placeholder="默认" value="${this.state.fontColor || ''}">
+                        <button id="reset-font-color" class="tw-color-reset-btn" title="重置颜色">↺</button>
                     </div>`
         )}
                 ${createCard(
-            settingTitle('layers', '面板透明度'),
-            '调整面板背景的透明程度 (0-100%)。',
-            `<div class="tw-slider-container" style="width: 100%;">
-                        <input type="range" id="panel-opacity-slider" min="0" max="100" step="5" value="${this.state.panelOpacity ?? 50}">
-                        <span id="panel-opacity-value" class="tw-slider-value">${this.state.panelOpacity ?? 50}%</span>
+            settingTitle('sun', '面板模糊度'),
+            '调整面板背景的模糊程度 (Glassmorphism)。',
+            `<div class="tw-slider-container">
+                        <input type="range" id="panel-blur-slider" min="0" max="20" step="1" value="${this.state.panelBlur !== undefined ? this.state.panelBlur : 10}">
+                        <span id="panel-blur-value" class="tw-slider-value">${this.state.panelBlur !== undefined ? this.state.panelBlur : 10}px</span>
                     </div>`
         )}
                 ${createCard(
-            settingTitle('focus', '模糊程度'),
-            '调整面板背景的模糊强度 (0-20px)。',
-            `<div class="tw-slider-container" style="width: 100%;">
-                        <input type="range" id="panel-blur-slider" min="0" max="20" step="1" value="${this.state.panelBlur ?? 12}">
-                        <span id="panel-blur-value" class="tw-slider-value">${this.state.panelBlur ?? 12}px</span>
+            settingTitle('droplet', '面板透明度'),
+            '调整面板背景的不透明度。',
+            `<div class="tw-slider-container">
+                        <input type="range" id="panel-opacity-slider" min="10" max="100" step="5" value="${this.state.panelOpacity !== undefined ? this.state.panelOpacity : 45}">
+                        <span id="panel-opacity-value" class="tw-slider-value">${this.state.panelOpacity !== undefined ? this.state.panelOpacity : 45}%</span>
                     </div>`
+        )}
+                ${createCard(
+            settingTitle('image', '动态插图背景'),
+            '勾选后，场景插图将自动设为酒馆背景，无插图时回退天色。',
+            `<label class="tw-checkbox">
+                        <input type="checkbox" id="illustration-bg-toggle" ${this.state.isDynamicIllustrationBgEnabled ? 'checked' : ''}>
+                        <span class="tw-checkmark"></span>
+                    </label>`
         )}
             </div>
         `;
@@ -596,16 +604,55 @@ export class UIRenderer {
                         <span class="tw-checkmark"></span>
                     </label>`
         )}
-                ${createCard(
-            settingTitle('image', '动态插图背景'),
-            '勾选后，场景插图将自动设为酒馆背景，无插图时回退天色。',
-            `<label class="tw-checkbox">
-                        <input type="checkbox" id="illustration-bg-toggle" ${this.state.isDynamicIllustrationBgEnabled ? 'checked' : ''}>
-                        <span class="tw-checkmark"></span>
-                    </label>`
-        )}
             </div>
         `;
+
+        // 白噪音卡片逻辑
+        let whiteNoiseControl;
+        const targetAudioManager = explicitAudioManager || this.audioManager;
+        const safeAudioManager = targetAudioManager || {
+            availableWhiteNoiseTracks: [],
+            hasCheckedAvailability: true, // Assume checked to avoid infinite loop
+            isCheckingAvailability: false,
+            checkWhiteNoiseAvailability: async () => []
+        };
+        const availableTracks = safeAudioManager.availableWhiteNoiseTracks || [];
+        const hasChecked = safeAudioManager.hasCheckedAvailability;
+        const isChecking = safeAudioManager.isCheckingAvailability;
+
+        if (!hasChecked && isChecking) {
+            whiteNoiseControl = `<div style="color:var(--text-secondary); font-size:0.9em;">⏳ 正在检测音频文件可用性...</div>`;
+        } else if (hasChecked && availableTracks.length === 0) {
+            whiteNoiseControl = `<div style="color:#ef9a9a; font-size:0.9em;">⚠️ 未检测到可用音频文件 (需放在 assets/audio 或正确配置 CDN)</div>`;
+        } else {
+            if (!hasChecked) {
+                if (typeof safeAudioManager.checkWhiteNoiseAvailability === 'function') {
+                    safeAudioManager.checkWhiteNoiseAvailability(); // Lazy check
+                }
+                whiteNoiseControl = `<div style="color:var(--text-secondary); font-size:0.9em;">⏳ 正在初始化...</div>`;
+            } else {
+                const options = availableTracks.map(t =>
+                    `<option value="${t.file}" ${this.state.whiteNoiseTrack === t.file ? 'selected' : ''}>${t.name}</option>`
+                ).join('');
+
+                whiteNoiseControl = `
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:100%;">
+                        <label class="tw-checkbox">
+                            <input type="checkbox" id="white-noise-toggle" ${this.state.whiteNoiseEnabled ? 'checked' : ''}>
+                            <span class="tw-checkmark"></span>
+                        </label>
+                        <select id="white-noise-select" class="tw-white-noise-select" style="flex:1; min-width:120px;">
+                            ${options}
+                        </select>
+                    </div>`;
+            }
+        }
+
+        const whiteNoiseCard = createCard(
+            settingTitle('headphones', '白噪音'),
+            '播放常驻背景白噪音，开启后将禁用AI动态环境音。',
+            whiteNoiseControl
+        );
 
         // ==================== 分类 3: 音效设置 ====================
         const audioContent = `
@@ -633,6 +680,16 @@ export class UIRenderer {
             `<div class="tw-slider-container" style="width: 100%;">
                         <input type="range" id="sfx-volume-slider" min="0" max="1" step="0.05" value="${this.state.sfxVolume}">
                         <span id="sfx-volume-value" class="tw-slider-value">${Math.round(this.state.sfxVolume * 100)}%</span>
+                    </div>`
+        )}
+                ${whiteNoiseCard}
+                ${createCard(
+            settingTitle('globe', '音频 CDN 地址'),
+            '设置远程音频文件的基础 URL，留空则仅使用本地文件。',
+            `<div class="tw-cdn-url-container">
+                        <input type="text" id="audio-cdn-url-input" 
+                            value="${this.state.audioCdnBaseUrl || ''}" 
+                            placeholder="如: https://cdn.jsdelivr.net/gh/user/repo/audio/">
                     </div>`
         )}
             </div>

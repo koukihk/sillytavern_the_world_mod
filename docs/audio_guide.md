@@ -25,6 +25,14 @@ THE WORLD - 音频指令指南 v2.3
 
 重要提示: 'path' 参数只需要提供音频文件的文件名（包含扩展名）。系统会自动在 assets/audio/ 目录中查找它。
 
+如果在设置面板中配置了"音频 CDN 地址"，系统会优先从 CDN 加载，失败后自动回退到本地文件。
+你也可以直接在 path 中填写完整 URL（如 "https://example.com/rain.mp3"），此时将直接从该 URL 加载。
+
+CDN 配置示例 (jsdelivr + GitHub 公开仓库):
+  https://cdn.jsdelivr.net/gh/用户名/仓库名@分支/audio/
+
+注意: CDN 服务器必须允许跨域访问（CORS），否则音频将无法加载。私有仓库不支持 jsdelivr，需使用其他支持认证的 CDN 服务。
+
 --------------------------------------------------
 2.1 环境音 (AMBIENT SOUND)
 --------------------------------------------------
@@ -87,7 +95,7 @@ THE WORLD - 音频指令指南 v2.3
 
 ==================================================
 
-4. 可用音频资源参考 (非详尽列表)
+4. 可用音频资源参考
 
-- 环境音 (Ambient): forest_day.mp3, forest_night.mp3, rain_on_window.mp3, strong_wind.mp3, city_ambience.mp3
-- 音效 (SFX): wood_break.mp3, door_creak.mp3, door_close.mp3, footstep_grass.mp3, footstep_wood.mp3, item_pickup.mp3, monster_growl.mp3, airplane1.mp3
+- 环境音 (Ambient): forest_day.mp3, forest_night.mp3, rain_on_window.mp3, rain_heavy.mp3, strong_wind.mp3, city_ambience.mp3, ocean_waves.mp3, campfire.mp3, cave_drips.mp3, thunderstorm.mp3, snowstorm.mp3, river_stream.mp3, market_crowd.mp3, night_crickets.mp3, fireplace_indoor.mp3
+- 音效 (SFX): wood_break.mp3, footstep_grass.mp3, footstep_wood.mp3, item_pickup.mp3, sword_clash.mp3, magic_cast.mp3, thunder.mp3, horse_gallop.mp3, water_splash.mp3, bell_chime.mp3, arrow_shoot.mp3, page_turn.mp3, airplane1.mp3

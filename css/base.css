@@ -433,6 +433,59 @@
     justify-content: flex-end;
 }
 
+/* CDN URL 输入框 */
+.tw-cdn-url-container {
+    width: 100%;
+}
+
+.tw-cdn-url-container input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: inherit;
+    font-size: 0.85em;
+    font-family: 'Consolas', 'Monaco', monospace;
+    outline: none;
+    transition: border-color .2s ease;
+}
+
+.tw-cdn-url-container input[type="text"]:focus {
+    border-color: rgba(161, 196, 253, 0.5);
+}
+
+.tw-cdn-url-container input[type="text"]::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+    font-family: inherit;
+}
+
+/* 白噪音选择器 */
+.tw-white-noise-select {
+    width: 100%;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: inherit;
+    font-size: 0.9em;
+    outline: none;
+    cursor: pointer;
+    transition: border-color .2s ease;
+    font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+    text-align: center;
+}
+
+.tw-white-noise-select:focus {
+    border-color: rgba(161, 196, 253, 0.5);
+}
+
+.tw-white-noise-select option {
+    background: #1e1e23;
+    color: var(--text-main);
+}
+
 /* 移除旧的 flex 设置项样式 */
 .tw-settings-item {
     display: none;

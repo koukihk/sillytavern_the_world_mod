@@ -207,7 +207,7 @@ export class UIController {
         // 设置面板内容不随消息变化，只渲染一次
         if (!this._settingsRendered) {
             const $settingsPane = this.$('#settings-pane').empty();
-            this.renderer.renderSettingsPane($settingsPane);
+            this.renderer.renderSettingsPane($settingsPane, this.dependencies.audioManager);
             this._settingsRendered = true;
         }
 

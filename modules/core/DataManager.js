@@ -68,6 +68,9 @@ export class DataManager {
         assignSetting('isAudioEnabled', this.state.isAudioEnabled);
         assignSetting('ambientVolume', this.state.ambientVolume);
         assignSetting('sfxVolume', this.state.sfxVolume);
+        assignSetting('audioCdnBaseUrl', this.state.audioCdnBaseUrl);
+        assignSetting('whiteNoiseEnabled', this.state.whiteNoiseEnabled);
+        assignSetting('whiteNoiseTrack', this.state.whiteNoiseTrack);
         assignSetting('fontColor', this.state.fontColor);
     }
 
@@ -104,6 +107,9 @@ export class DataManager {
             isAudioEnabled: this.state.isAudioEnabled,
             ambientVolume: this.state.ambientVolume,
             sfxVolume: this.state.sfxVolume,
+            audioCdnBaseUrl: this.state.audioCdnBaseUrl,
+            whiteNoiseEnabled: this.state.whiteNoiseEnabled,
+            whiteNoiseTrack: this.state.whiteNoiseTrack,
             fontColor: this.state.fontColor,
         };
         this.logger.log('正在保存的设置:', settings);
