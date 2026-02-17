@@ -209,11 +209,11 @@ export class AudioManager {
 
     async playAmbient({ path, volume = 1.0, fade_duration = 2 }) {
         const audioCtx = this._getAudioContext();
-        if (!audioCtx) return;
+        if (!audioCtx) return false;
 
         if (this.currentAmbientSound && this.currentAmbientSound.path === path) {
             this.currentAmbientSound.gainNode.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + fade_duration);
-            return;
+            return true;
         }
 
         if (this.currentAmbientSound) {
@@ -221,7 +221,7 @@ export class AudioManager {
         }
 
         const buffer = await this._loadAudio(path);
-        if (!buffer) return;
+        if (!buffer) return false;
 
         const gainNode = audioCtx.createGain();
         gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
@@ -240,6 +240,7 @@ export class AudioManager {
 
         this._ambientLoopScheduler();
         this.logger.log(`[Audio] Playing ambient: ${path}`);
+        return true;
     }
 
     stopAmbient({ fade_duration = 2 }) {
@@ -376,8 +377,12 @@ export class AudioManager {
 
     // ==================== 白噪音 ====================
 
+    getWhiteNoiseTracks() {
+        return WHITE_NOISE_TRACKS;
+    }
+
     async startWhiteNoise(track) {
-        if (!track) return;
+        if (!track) return false;
         this.logger.log(`[Audio] Starting white noise: ${track}`);
 
         // 先停止任何动态环境音
@@ -386,13 +391,21 @@ export class AudioManager {
         }
 
         this.whiteNoiseActive = true;
-        await this.playAmbient({ path: track, volume: 1.0, fade_duration: 2 });
+        const success = await this.playAmbient({ path: track, volume: 1.0, fade_duration: 2 });
 
         // 关键修复：如果在加载过程中被用户关闭了白噪音，确保立即停止播放
         if (!this.whiteNoiseActive) {
             this.logger.log(`[Audio] White noise disabled during load, stopping: ${track}`);
             this.stopAmbient({ fade_duration: 0.5 });
+            return false; // Considered interrupted/failed
         }
+
+        if (!success) {
+            this.whiteNoiseActive = false; // Reset state if failed
+            return false;
+        }
+
+        return true;
     }
 
     stopWhiteNoise() {
@@ -404,49 +417,5 @@ export class AudioManager {
         this.logger.log('[Audio] Stopping white noise.');
         this.whiteNoiseActive = false;
         this.stopAmbient({ fade_duration: 2 });
-    }
-
-    async checkWhiteNoiseAvailability() {
-        if (this.isCheckingAvailability) return;
-        this.isCheckingAvailability = true;
-        // this.logger.log('[Audio] Checking availability of white noise tracks...');
-
-        const checkPromises = WHITE_NOISE_TRACKS.map(async (track) => {
-            let url;
-            // 构建 URL：逻辑与 _loadAudio 类似
-            if (this.state.audioCdnBaseUrl) {
-                url = `${this.state.audioCdnBaseUrl.replace(/\/+$/, '')}/${track.file}`;
-            } else {
-                // 本地路径
-                const scriptUrl = new URL(import.meta.url);
-                const basePath = scriptUrl.pathname.substring(0, scriptUrl.pathname.lastIndexOf('/modules'));
-                url = `${this.win.location.origin}${basePath}/assets/audio/${track.file}`;
-            }
-
-            try {
-                // 使用 HEAD 请求检查文件是否存在
-                const response = await fetch(url, { method: 'HEAD', cache: 'no-cache' });
-                if (response.ok) {
-                    return track;
-                } else if (response.status === 405) {
-                    // 如果 HEAD 不允许，尝试 GET Range
-                    const getResponse = await fetch(url, { method: 'GET', headers: { 'Range': 'bytes=0-0' } });
-                    if (getResponse.ok) return track;
-                }
-            } catch (e) {
-                // console.warn(`[Audio] Check failed for ${track.file}:`, e);
-            }
-            return null;
-        });
-
-        const results = await Promise.all(checkPromises);
-
-        // 过滤出有效的 tracks
-        this.availableWhiteNoiseTracks = results.filter(t => t !== null);
-        this.isCheckingAvailability = false;
-        this.hasCheckedAvailability = true; // 标记已完成一次检测
-        this.logger.log(`[Audio] Available white noise tracks: ${this.availableWhiteNoiseTracks.length}`);
-
-        return this.availableWhiteNoiseTracks;
     }
 }

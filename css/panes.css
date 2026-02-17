@@ -947,3 +947,43 @@
     opacity: 0.35;
     cursor: not-allowed;
 }
+
+/* New Font Color Picker Styles */
+.tw-font-color-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.tw-color-picker-wrapper {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tw-color-picker-wrapper input[type="color"] {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    cursor: pointer;
+}
+
+.tw-font-color-container input[type="text"] {
+    flex: 1;
+    font-family: 'Consolas', 'Monaco', monospace;
+}
+
+/* Ensure reset button aligns nicely if we reused the class but need specific tweaks */
+.tw-font-color-container .tw-color-reset-btn {
+    padding: 5px;
+    /* Compact padding for the icon-only button */
+}

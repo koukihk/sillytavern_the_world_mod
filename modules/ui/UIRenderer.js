@@ -7,7 +7,7 @@ import { Icons, getIcon } from '../utils/icons.js';
 import { getAnimatedWeatherIcon } from '../utils/animatedWeatherIcons.js';
 
 export class UIRenderer {
-    constructor({ $, config, state, skyThemeController, mapSystem, logger, mapViewportManager, globalThemeManager }) {
+    constructor({ $, config, state, skyThemeController, mapSystem, logger, mapViewportManager, globalThemeManager, audioManager }) {
         this.$ = $;
         this.config = config;
         this.state = state;
@@ -16,9 +16,11 @@ export class UIRenderer {
         this.logger = logger;
         this.mapViewportManager = mapViewportManager;
         this.globalThemeManager = globalThemeManager; // For illustration background
+        this.audioManager = audioManager;
     }
 
     getWeatherIconHtml(weather, period) {
+
         const container = (iconHtml) => `<div class="tw-weather-icon">${iconHtml}</div>`;
 
         if (weather.includes('雷')) {
@@ -552,15 +554,20 @@ export class UIRenderer {
                 ${createCard(
             settingTitle('palette', '字体颜色'),
             '自定义面板文字颜色 (Hex/RGB/颜色名)。',
-            `<div class="tw-input-container">
-                        <input type="text" id="font-color-input" class="tw-input" placeholder="默认" value="${this.state.fontColor || ''}">
-                        <button id="reset-font-color" class="tw-color-reset-btn" title="重置颜色">↺</button>
+            `<div class="tw-cdn-url-container tw-font-color-container" style="display: flex; gap: 8px; align-items: center;">
+                        <div class="tw-color-picker-wrapper" style="position: relative; width: 36px; height: 36px; border-radius: 6px; overflow: hidden; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1);">
+                            <input type="color" id="font-color-picker" value="${this.state.fontColor || '#e0e0e0'}" style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; cursor: pointer; padding: 0; margin: 0; border: none;">
+                        </div>
+                        <input type="text" id="font-color-input" placeholder="#RRGGBB" value="${this.state.fontColor || ''}" style="flex: 1; font-family: monospace;">
+                        <button id="font-color-reset" class="tw-color-reset-btn" title="重置颜色" ${!this.state.fontColor ? 'disabled' : ''} style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; padding: 5px; opacity: 0.8;">
+                             ${getIcon('rotateCcw', 'tw-icon')}
+                        </button>
                     </div>`
         )}
                 ${createCard(
             settingTitle('sun', '面板模糊度'),
             '调整面板背景的模糊程度 (Glassmorphism)。',
-            `<div class="tw-slider-container">
+            `<div class="tw-slider-container" style="width: 100%;">
                         <input type="range" id="panel-blur-slider" min="0" max="20" step="1" value="${this.state.panelBlur !== undefined ? this.state.panelBlur : 10}">
                         <span id="panel-blur-value" class="tw-slider-value">${this.state.panelBlur !== undefined ? this.state.panelBlur : 10}px</span>
                     </div>`
@@ -568,7 +575,7 @@ export class UIRenderer {
                 ${createCard(
             settingTitle('droplet', '面板透明度'),
             '调整面板背景的不透明度。',
-            `<div class="tw-slider-container">
+            `<div class="tw-slider-container" style="width: 100%;">
                         <input type="range" id="panel-opacity-slider" min="10" max="100" step="5" value="${this.state.panelOpacity !== undefined ? this.state.panelOpacity : 45}">
                         <span id="panel-opacity-value" class="tw-slider-value">${this.state.panelOpacity !== undefined ? this.state.panelOpacity : 45}%</span>
                     </div>`
@@ -609,48 +616,34 @@ export class UIRenderer {
 
         // 白噪音卡片逻辑
         let whiteNoiseControl;
-        const targetAudioManager = explicitAudioManager || this.audioManager;
-        const safeAudioManager = targetAudioManager || {
-            availableWhiteNoiseTracks: [],
-            hasCheckedAvailability: true, // Assume checked to avoid infinite loop
-            isCheckingAvailability: false,
-            checkWhiteNoiseAvailability: async () => []
-        };
-        const availableTracks = safeAudioManager.availableWhiteNoiseTracks || [];
-        const hasChecked = safeAudioManager.hasCheckedAvailability;
-        const isChecking = safeAudioManager.isCheckingAvailability;
+        const availableTracks = this.audioManager ? this.audioManager.getWhiteNoiseTracks() : [];
 
-        if (!hasChecked && isChecking) {
-            whiteNoiseControl = `<div style="color:var(--text-secondary); font-size:0.9em;">⏳ 正在检测音频文件可用性...</div>`;
-        } else if (hasChecked && availableTracks.length === 0) {
-            whiteNoiseControl = `<div style="color:#ef9a9a; font-size:0.9em;">⚠️ 未检测到可用音频文件 (需放在 assets/audio 或正确配置 CDN)</div>`;
-        } else {
-            if (!hasChecked) {
-                if (typeof safeAudioManager.checkWhiteNoiseAvailability === 'function') {
-                    safeAudioManager.checkWhiteNoiseAvailability(); // Lazy check
-                }
-                whiteNoiseControl = `<div style="color:var(--text-secondary); font-size:0.9em;">⏳ 正在初始化...</div>`;
-            } else {
-                const options = availableTracks.map(t =>
-                    `<option value="${t.file}" ${this.state.whiteNoiseTrack === t.file ? 'selected' : ''}>${t.name}</option>`
-                ).join('');
-
-                whiteNoiseControl = `
-                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:100%;">
-                        <label class="tw-checkbox">
-                            <input type="checkbox" id="white-noise-toggle" ${this.state.whiteNoiseEnabled ? 'checked' : ''}>
-                            <span class="tw-checkmark"></span>
-                        </label>
-                        <select id="white-noise-select" class="tw-white-noise-select" style="flex:1; min-width:120px;">
-                            ${options}
-                        </select>
-                    </div>`;
-            }
+        // Migration: Handle legacy state key 'whiteNoiseEnabled'
+        if (this.state.isWhiteNoiseEnabled === undefined && this.state.whiteNoiseEnabled !== undefined) {
+            this.state.isWhiteNoiseEnabled = this.state.whiteNoiseEnabled;
         }
+
+        const isEnabled = !!this.state.isWhiteNoiseEnabled; // Ensure boolean
+
+        const options = availableTracks.map(t =>
+            `<option value="${t.file}" ${this.state.whiteNoiseTrack === t.file ? 'selected' : ''}>${t.name}</option>`
+        ).join('');
+
+        whiteNoiseControl = `
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:100%;">
+                <label class="tw-checkbox">
+                    <input type="checkbox" id="white-noise-toggle" ${isEnabled ? 'checked' : ''}>
+                    <span class="tw-checkmark"></span>
+                </label>
+                <select id="white-noise-select" class="tw-white-noise-select" style="flex:1; min-width:120px;">
+                    <option value="" ${!this.state.whiteNoiseTrack ? 'selected' : ''}>-- 无 --</option>
+                    ${options}
+                </select>
+            </div>`;
 
         const whiteNoiseCard = createCard(
             settingTitle('headphones', '白噪音'),
-            '播放常驻背景白噪音，开启后将禁用AI动态环境音。',
+            '播放常驻背景白噪音，开启后将禁用动态环境音。',
             whiteNoiseControl
         );
 

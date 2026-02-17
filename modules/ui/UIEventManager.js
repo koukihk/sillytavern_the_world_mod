@@ -319,42 +319,52 @@ export class UIEventManager {
             this.dataManager.saveState();
             this.logger.log(`[Audio] CDN base URL updated to: ${this.state.audioCdnBaseUrl || '(empty)'}`);
 
-            // CDN 改变后，重新检查白噪音可用性
-            this.audioManager.isCheckingAvailability = false; // Reset lock if needed
-            this.audioManager.hasCheckedAvailability = false; // Reset checked status
-            this.audioManager.checkWhiteNoiseAvailability().then(tracks => {
-                const count = tracks ? tracks.length : 0;
-                this.toastr.success(`音频源已更新，检测到 ${count} 个可用白噪音文件。`);
-
-                const $pane = this.$('#settings-pane');
-                if ($pane.length && $pane.is(':visible')) {
-                    const scrollTop = $pane.scrollTop();
-                    if (this.renderer && typeof this.renderer.renderSettingsPane === 'function') {
-                        this.renderer.renderSettingsPane($pane, this.audioManager);
-                        $pane.scrollTop(scrollTop);
-                    }
-                }
-            });
-            this.toastr.info('正在检测新 CDN 下的音频文件...');
+            // 提示用户音频源已更新 (不再自动检测，由用户点击播放时触发加载)
+            this.toastr.success('音频源地址已更新。');
         });
 
-        // White Noise toggle
-        $panel.on('change.tw_settings', '#white-noise-toggle', (e) => {
-            this.state.whiteNoiseEnabled = e.target.checked;
+        // White Noise Toggle
+        $panel.on('change.tw_settings', '#white-noise-toggle', async (e) => {
+            const isChecked = e.target.checked;
+            this.state.isWhiteNoiseEnabled = isChecked;
+            // Removed: this.ui.applyWhiteNoiseState();
+
             this.dataManager.saveState();
-            if (this.state.whiteNoiseEnabled) {
-                this.audioManager.startWhiteNoise(this.state.whiteNoiseTrack);
+
+            if (isChecked) {
+                const track = this.state.whiteNoiseTrack;
+                if (track) {
+                    const success = await this.audioManager.startWhiteNoise(track);
+                    if (!success) {
+                        toastr.warning('无法播放选定的白噪音 (文件可能不存在)', 'The World');
+                        // Don't disable the toggle efficiently, just reset validity
+                        // User might want to pick another track
+                        this.state.whiteNoiseTrack = '';
+                        this.$('#white-noise-select').val('');
+                        this.dataManager.saveState();
+                    }
+                }
             } else {
                 this.audioManager.stopWhiteNoise();
             }
         });
 
-        // White Noise track selector
-        $panel.on('change.tw_settings', '#white-noise-select', (e) => {
-            this.state.whiteNoiseTrack = e.target.value;
+        // White Noise Selection
+        $panel.on('change.tw_settings', '#white-noise-select', async (e) => {
+            const track = e.target.value;
+            this.state.whiteNoiseTrack = track;
             this.dataManager.saveState();
-            if (this.state.whiteNoiseEnabled) {
-                this.audioManager.startWhiteNoise(this.state.whiteNoiseTrack);
+
+            if (this.state.isWhiteNoiseEnabled && track) {
+                const success = await this.audioManager.startWhiteNoise(track);
+                if (!success) {
+                    toastr.warning('无法播放选定的白噪音 (文件可能不存在)', 'The World');
+                    this.state.whiteNoiseTrack = '';
+                    this.$('#white-noise-select').val('');
+                    this.dataManager.saveState();
+                }
+            } else if (!track) {
+                this.audioManager.stopWhiteNoise();
             }
         });
 
@@ -370,15 +380,32 @@ export class UIEventManager {
         $panel.on('input.tw_settings', '#font-color-picker', (e) => {
             const color = e.target.value;
             this.state.fontColor = color;
+            this.$('#font-color-input').val(color); // Sync text input
             this.ui.applyFontColor();
             this.$('#font-color-reset').prop('disabled', false);
         });
         $panel.on('change.tw_settings', '#font-color-picker', () => {
             this.dataManager.saveState();
         });
+
+        $panel.on('input.tw_settings', '#font-color-input', (e) => {
+            const color = e.target.value;
+            this.state.fontColor = color;
+            this.ui.applyFontColor();
+            // Try to sync color picker if valid hex
+            if (/^#[0-9A-F]{6}$/i.test(color)) {
+                this.$('#font-color-picker').val(color);
+            }
+            this.$('#font-color-reset').prop('disabled', !color);
+        });
+        $panel.on('change.tw_settings', '#font-color-input', () => {
+            this.dataManager.saveState();
+        });
+
         $panel.on('click.tw_settings', '#font-color-reset', () => {
             this.state.fontColor = '';
             this.ui.applyFontColor();
+            this.$('#font-color-input').val('');
             this.$('#font-color-picker').val('#e0e0e0');
             this.$('#font-color-reset').prop('disabled', true);
             this.dataManager.saveState();

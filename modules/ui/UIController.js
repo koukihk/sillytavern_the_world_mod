@@ -180,6 +180,8 @@ export class UIController {
         }
     }
 
+
+
     async updateAllPanes() {
         this.logger.log('正在更新所有面板内容...');
         const $wsPane = this.$('#world-state-pane').empty();
