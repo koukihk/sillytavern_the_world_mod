@@ -47,6 +47,7 @@ export class DataManager {
         assignSetting('isFxGlobal', this.state.isFxGlobal);
         assignSetting('isImmersiveModeEnabled', this.state.isImmersiveModeEnabled);
         assignSetting('isDynamicIllustrationBgEnabled', this.state.isDynamicIllustrationBgEnabled);
+        assignSetting('isGoogleMapEnabled', this.state.isGoogleMapEnabled);
         assignSetting('isRaindropFxOn', this.state.isRaindropFxOn);
         assignSetting('weatherFxEnabled', this.state.weatherFxEnabled);
         assignSetting('isHighPerformanceFxEnabled', this.state.isHighPerformanceFxEnabled);
@@ -86,6 +87,7 @@ export class DataManager {
             isFxGlobal: this.state.isFxGlobal,
             isImmersiveModeEnabled: this.state.isImmersiveModeEnabled,
             isDynamicIllustrationBgEnabled: this.state.isDynamicIllustrationBgEnabled,
+            isGoogleMapEnabled: this.state.isGoogleMapEnabled,
             isRaindropFxOn: this.state.isRaindropFxOn,
             weatherFxEnabled: this.state.weatherFxEnabled,
             isHighPerformanceFxEnabled: this.state.isHighPerformanceFxEnabled,

@@ -301,6 +301,13 @@
     /* Serif for "literary" feel */
 }
 
+.ws-hero-value.location {
+    font-size: 18px;
+    line-height: 1.4;
+    opacity: 0.95;
+    font-weight: 400;
+}
+
 .ws-hero-value.scene {
     font-size: 16px;
     line-height: 1.6;
@@ -360,6 +367,23 @@
 
 .ws-time-interact:hover,
 .ws-weather-interact:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Location interact styles - only when Google Maps is enabled */
+.ws-location-interact {
+    position: relative;
+    border-radius: 8px;
+    padding: 8px;
+    transition: background-color 0.2s;
+}
+
+/* Only show interactive styles when cursor is pointer (controlled by JS) */
+.ws-location-interact[style*="cursor: pointer"] {
+    cursor: pointer;
+}
+
+.ws-location-interact[style*="cursor: pointer"]:hover {
     background-color: rgba(255, 255, 255, 0.05);
 }
 

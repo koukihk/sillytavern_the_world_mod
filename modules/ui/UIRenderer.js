@@ -166,6 +166,17 @@ export class UIRenderer {
                     <!-- Season Hero -->
                     <!-- Season Hero Removed -->
 
+                    <!-- Location Hero -->
+                    ${data['地点'] ? `
+                    <div class="ws-hero-item">
+                        <div class="ws-hero-label">${getIcon('mapPin')} 地点</div>
+                        <div class="ws-hero-value location ${this.state.isGoogleMapEnabled ? 'ws-location-interact' : ''}" 
+                             ${this.state.isGoogleMapEnabled ? 'style="cursor: pointer;"' : ''} 
+                             title="${this.state.isGoogleMapEnabled ? '点击查看地图' : ''}">
+                            ${(data['地点'] || '').replace(/\[\[(.*?)\]\]/g, '<span class="ws-interactive-keyword" data-keyword="$1">$1</span>')}
+                        </div>
+                    </div>` : ''}
+
                     <!-- Scene Hero -->
                     ${data['场景'] ? `
                     <div class="ws-hero-item">
@@ -585,6 +596,14 @@ export class UIRenderer {
             '勾选后，场景插图将自动设为酒馆背景，无插图时回退天色。',
             `<label class="tw-checkbox">
                         <input type="checkbox" id="illustration-bg-toggle" ${this.state.isDynamicIllustrationBgEnabled ? 'checked' : ''}>
+                        <span class="tw-checkmark"></span>
+                    </label>`
+        )}
+                ${createCard(
+            settingTitle('mapPin', 'Google 地图集成'),
+            '启用后，点击地点可查看 Google 地图。',
+            `<label class="tw-checkbox">
+                        <input type="checkbox" id="google-map-toggle" ${this.state.isGoogleMapEnabled ? 'checked' : ''}>
                         <span class="tw-checkmark"></span>
                     </label>`
         )}

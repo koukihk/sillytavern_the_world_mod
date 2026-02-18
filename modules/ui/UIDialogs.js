@@ -381,6 +381,35 @@ export class UIDialogs {
         });
     }
 
+    showLocationMapDialog(locationName) {
+        this.removeDialog();
+        
+        // 检测是否为移动端
+        const isMobile = window.innerWidth < 768;
+        
+        const content = this.$(`
+            <div class="tw-location-map-container ${isMobile ? 'mobile' : 'desktop'}">
+                <iframe 
+                    width="100%" 
+                    height="100%" 
+                    frameborder="0" 
+                    style="border:0; filter: grayscale(0.5) contrast(1.1) invert(0.9) hue-rotate(180deg); pointer-events: auto;" 
+                    src="https://www.google.com/maps?q=${encodeURIComponent(locationName)}&output=embed"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+            </div>
+        `);
+        
+        const buttons = this.$('<div class="ws-dialog-buttons"><button class="dialog_cancel has-ripple">关闭</button></div>');
+        const dialog = this.createDialog(`${locationName}`, content, buttons);
+        
+        // 为地图对话框添加特殊类
+        dialog.find('.ws-dialog').addClass('tw-map-dialog');
+        
+        dialog.find('.dialog_cancel').on('click', () => this.removeDialog());
+    }
+
     showNodeInteractionDialog(node, event) {
         this.removeDialog();
 

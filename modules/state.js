@@ -36,6 +36,7 @@ export const TheWorldState = {
     isFxGlobal: false,
     isImmersiveModeEnabled: false, // New toggle for the "glass" effect
     isDynamicIllustrationBgEnabled: false, // Dynamic illustration background toggle
+    isGoogleMapEnabled: false, // Google Maps integration toggle
     isRaindropFxOn: false,
     weatherFxEnabled: true,
     isHighPerformanceFxEnabled: true,

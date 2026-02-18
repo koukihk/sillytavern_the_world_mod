@@ -449,3 +449,55 @@
 .tw-node-interaction-menu button:hover {
     background-color: var(--dialog-button-hover-bg);
 }
+
+/* Location Map Container */
+.tw-location-map-container {
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid #444;
+    position: relative;
+    background: #222;
+}
+
+.tw-location-map-container iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* 移动端：保持原样 */
+.tw-location-map-container.mobile {
+    width: 100%;
+    max-width: 480px;
+    height: 380px;
+    margin: 10px 0;
+}
+
+/* PC端：全屏显示 */
+.tw-location-map-container.desktop {
+    width: 90vw;
+    height: 80vh;
+    max-width: 1400px;
+    max-height: 900px;
+    margin: 0;
+}
+
+/* 地图对话框特殊样式 - 移除宽度限制 */
+.ws-dialog.tw-map-dialog {
+    max-width: none;
+    width: auto;
+    padding: 15px;
+}
+
+/* PC端地图对话框 */
+@media (min-width: 768px) {
+    .ws-dialog.tw-map-dialog {
+        width: auto;
+        max-width: none;
+    }
+    
+    /* PC端对话框向上移动 */
+    .ws-dialog-overlay {
+        padding-top: calc(5vh - 8px);
+    }
+}

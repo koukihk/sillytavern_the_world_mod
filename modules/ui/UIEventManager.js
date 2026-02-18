@@ -116,6 +116,12 @@ export class UIEventManager {
         $panel.on('click.tw_content', '.ws-interactive-keyword', (e) => this.dialogs.showKeywordInteractDialog(this.$(e.target).data('keyword')));
         $panel.on('click.tw_content', '.ws-time-interact', () => this.dialogs.showTimeInteractDialog());
         $panel.on('click.tw_content', '.ws-weather-interact', () => this.dialogs.showWeatherInteractDialog());
+        $panel.on('click.tw_content', '.ws-location-interact', (e) => {
+            if (this.state.isGoogleMapEnabled) {
+                const locationText = this.$(e.currentTarget).text().trim();
+                this.dialogs.showLocationMapDialog(locationText);
+            }
+        });
         $panel.on('click.tw_content', '.character_name.interactive', (e) => {
             e.stopPropagation();
             this.dialogs.showNpcInteractDialog(this.$(e.target).closest('.character_name').data('name'));
@@ -194,6 +200,7 @@ export class UIEventManager {
                 'global-theme-toggle': 'isGlobalThemeEngineEnabled',
                 'immersive-mode-toggle': 'isImmersiveModeEnabled',
                 'illustration-bg-toggle': 'isDynamicIllustrationBgEnabled',
+                'google-map-toggle': 'isGoogleMapEnabled',
                 'fx-global-toggle': 'isFxGlobal',
                 'raindrop-fx-toggle': 'isRaindropFxOn',
                 'weather-fx-toggle': 'weatherFxEnabled',
@@ -223,6 +230,9 @@ export class UIEventManager {
                         const imageUrl = `${this.config.IMAGE_BASE_URL}${this.state.latestWorldStateData['插图']}`;
                         this.globalThemeManager.setIllustrationBackground(imageUrl);
                     }
+                } else if (key === 'isGoogleMapEnabled') {
+                    // Google 地图开关切换时，更新世界状态面板以显示/隐藏提示
+                    this.renderer.renderWorldStatePane(this.$('#world-state-pane'), this.state.latestWorldStateData);
                 } else if (key === 'isAudioEnabled') {
                     this.audioManager.setMasterEnabled(e.target.checked);
                     // 同步面板头部的音频按钮图标
